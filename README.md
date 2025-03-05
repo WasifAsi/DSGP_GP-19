@@ -64,5 +64,5 @@ pip install -r requirements.txt
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
-For more information, contact us at [your contact email] or open an issue in the repository.
+For more information, contact us or open an issue in the repository.
 
