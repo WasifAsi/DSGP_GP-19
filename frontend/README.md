@@ -1,54 +1,71 @@
-# React + TypeScript + Vite
+# Shoreline Analysis
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A web application for analyzing shoreline changes in Sri Lanka using satellite imagery and machine learning.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This project provides tools to detect and monitor coastal erosion patterns using Sentinel-2 satellite imagery. Built with React, TypeScript, and TailwindCSS, it offers an intuitive interface for researchers and environmental agencies to analyze shoreline changes.
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+-   🛰️ **Satellite Image Analysis**: Process Sentinel-2 satellite images to detect shorelines
+-   🤖 **Machine Learning Detection**: Advanced algorithms for precise shoreline identification
+-   📊 **Change Analysis**: Calculate erosion/accretion rates and temporal changes
+-   📱 **Responsive Design**: Full mobile and desktop support
+-   🌙 **Dark Mode**: Built-in light/dark theme switching
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Getting Started
+
+### Prerequisites
+
+-   Node.js 18.x or higher
+-   npm or yarn
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/shoreline-analysis.git
+cd shoreline-analysis
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. Install dependencies:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+npm install
 ```
+
+3. Start the development server:
+
+```
+npm run dev
+```
+
+-   The application will be available at http://localhost:5173
+
+### Building for Production
+
+```
+npm run build
+```
+
+### Project Structure
+
+```
+src/
+├── components/     # Reusable UI components
+├── pages/         # Page components
+├── assets/        # Static assets
+└── styles/        # CSS and styling files
+```
+
+## Technology Stack
+- **Framework**: React 18
+- **Language**: TypeScript
+- **Styling**: TailwindCSS
+- **Animation**: Framer Motion
+- **State Management**: React Hooks
+- **Routing**: React Router
+- **Build Tool**: Vite
+- **Notifications**: Sonner
