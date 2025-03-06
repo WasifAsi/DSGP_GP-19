@@ -96,8 +96,12 @@ const Upload = () => {
 	return (
 		<div className="pt-32 pb-24">
 			<div className="container mx-auto px-4">
-				{/* todo  */}
-
+				<SectionHeading
+						eyebrow="Upload & Analyze"
+						title="Shoreline Change Analysis"
+						subtitle="Upload satellite images of Sri Lankan coastal regions to analyze shoreline changes and erosion patterns. Our system will automatically detect shorelines and calculate rates of change."
+				/>
+			
 				<div className="mt-16 max-w-4xl mx-auto">
 					<UploadArea
 						onUpload={handleUpload}
@@ -105,6 +109,30 @@ const Upload = () => {
 						uploadProgress={uploadProgress}
 					/>
 				</div>
+
+				{analysisStep > 0 && (
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.5 }}
+						className="mt-16 max-w-3xl mx-auto"
+					>
+
+						<div className="bg-white dark:bg-gray-800/30 rounded-xl shadow-lg p-8">
+							<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-6">
+								Analysis Progress
+							</h3>
+
+							
+
+							{/* todo  */}
+
+						</div>
+					</motion.div>
+				)}
+
+				{/* todo  */}
+
 			</div>
 		</div>
 	);
