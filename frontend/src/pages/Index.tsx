@@ -99,6 +99,67 @@ const Index = () => {
 					</div>
 				</div>
 			</section>	
+
+			{/* Understanding Coastal Dynamics */}
+			<section className="py-16 bg-shoreline-light-blue/20 dark:bg-shoreline-dark/50">
+				<div className="container mx-auto px-4">
+					<SectionHeading
+						eyebrow="Research Focus"
+						title={
+							<>
+								Understanding{" "}
+								<span className="text-shoreline-blue">
+									Coastal Dynamics
+								</span>{" "}
+								in Sri Lanka
+							</>
+						}
+						subtitle="Our research focuses on identifying and assessing shoreline changes across critical coastal regions of Sri Lanka to support sustainable environmental management."
+						centered={true}
+					/>
+
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+						<div className="bg-white dark:bg-shoreline-dark/30 p-6 rounded-xl shadow-md">
+							<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-4">
+								The Problem
+							</h3>
+							<p className="text-shoreline-text dark:text-gray-300">
+								Sri Lanka's coastlines are experiencing rapid
+								changes due to natural processes, human
+								development, and climate-driven forces.
+								Understanding these changes is critical for
+								effective conservation and management.
+							</p>
+						</div>
+
+						<div className="bg-white dark:bg-shoreline-dark/30 p-6 rounded-xl shadow-md">
+							<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-4">
+								Our Approach
+							</h3>
+							<p className="text-shoreline-text dark:text-gray-300">
+								By combining satellite imagery analysis with
+								machine learning, we're able to identify changes
+								with unprecedented accuracy. Our algorithms
+								detect shoreline shifts with exceptional
+								precision.
+							</p>
+						</div>
+
+						<div className="bg-white dark:bg-shoreline-dark/30 p-6 rounded-xl shadow-md">
+							<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-4">
+								Impact & Vision
+							</h3>
+							<p className="text-shoreline-text dark:text-gray-300">
+								Our goal is to develop a comprehensive
+								understanding of coastal dynamics, provide
+								essential data for management decisions, promote
+								sustainable conservation, and preserve Sri
+								Lanka's valuable coastlines.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
 						
 			
 		</div>
