@@ -75,6 +75,27 @@ const Index = () => {
 								</Link>
 							</div>
 						</motion.div>
+						<motion.div
+							initial={{ opacity: 0, y: 40 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.8, delay: 0.3 }}
+							className="w-full max-w-5xl relative"
+						>
+							<div className="absolute -inset-0.5 bg-gradient-to-r from-shoreline-blue/30 to-shoreline-light-blue/30 rounded-2xl blur" />
+							<motion.div
+								initial={{ opacity: 0, scale: 0.95 }}
+								animate={{ opacity: 1, scale: 1 }}
+								transition={{ duration: 0.6 }}
+								className="relative rounded-2xl overflow-hidden shadow-2xl"
+							>
+								<img
+									src="sea.avif"
+									alt="Sri Lankan coastal region"
+									className="w-full h-auto rounded-2xl transform hover:scale-105 transition-transform duration-700"
+								/>
+								<div className="absolute inset-0 bg-gradient-to-b from-transparent to-shoreline-dark/10 pointer-events-none" />
+							</motion.div>
+						</motion.div>
 					</div>
 				</div>
 			</section>	
