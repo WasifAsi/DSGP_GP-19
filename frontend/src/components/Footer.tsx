@@ -23,7 +23,43 @@ const Footer = () => {
             className="grid grid-cols-1 md:grid-cols-3 gap-12 pb-12"
           >
 
-          {/* to do */}
+          {/* Brand Section */}
+          <div className="space-y-6">
+            <Link to="/" className="group inline-flex items-center space-x-2">
+              <span className="relative">
+                <span className="text-shoreline-blue font-display font-bold text-2xl">
+                  Shoreline<span className="text-shoreline-dark dark:text-white">Analysis</span>
+                </span>
+                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-shoreline-blue transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+              </span>
+            </Link>
+            
+            <p className="text-shoreline-text dark:text-gray-300 text-sm max-w-xs leading-relaxed">
+              Analyzing changes in Sri Lanka's coastlines using satellite imagery and machine learning 
+              to support coastal management and conservation efforts.
+            </p>
+            
+            <div className="flex space-x-5">
+              {[
+                { icon: <Github size={20} />, href: "#", label: "Github" },
+                { icon: <Twitter size={20} />, href: "#", label: "Twitter" },
+                { icon: <Linkedin size={20} />, href: "#", label: "LinkedIn" }
+              ].map((social) => (
+                <motion.a
+                  key={social.label}
+                  href={social.href}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  aria-label={social.label}
+                  className="p-2 rounded-full bg-shoreline-blue/10 dark:bg-shoreline-blue/20 
+                            text-shoreline-blue hover:bg-shoreline-blue hover:text-white 
+                            transition-all duration-300"
+                >
+                  {social.icon}
+                </motion.a>
+              ))}
+            </div>
+          </div>
 
           {/* Quick Links */}
           <div className="space-y-6">
