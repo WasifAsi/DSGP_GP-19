@@ -112,28 +112,28 @@ const itemVariants = [
   {
     top: 50,
     left: 12,
-    label: 'Data Storage',
+    label: 'U-Net Model',
     bgClass: 'bg-green-100 dark:bg-green-900',
-    icon: <Database size={24} className="text-green-600 dark:text-green-400" />
+    icon: <BrainCircuit size={24} className="text-green-600 dark:text-green-400" />
   },
   {
     top: 50,
     left: 88,
-    label: 'Analytics',
+    label: 'SegNet Model',
     bgClass: 'bg-orange-100 dark:bg-orange-900',
-    icon: <BarChart3 size={24} className="text-orange-600 dark:text-orange-400" />
+    icon: <BrainCircuit size={24} className="text-orange-600 dark:text-orange-400" />
   },
   {
     top: 75,
     left: 30,
-    label: 'CNN Model',
+    label: 'DeepLab v3',
     bgClass: 'bg-shoreline-light-blue dark:bg-blue-900',
     icon: <BrainCircuit size={24} className="text-shoreline-blue dark:text-blue-400" />
   },
   {
     top: 75,
     left: 70,
-    label: 'LSTM Model',
+    label: 'FCN-8 Model',
     bgClass: 'bg-indigo-100 dark:bg-indigo-900',
     icon: <BrainCircuit size={24} className="text-indigo-600 dark:text-indigo-400" />
   }
