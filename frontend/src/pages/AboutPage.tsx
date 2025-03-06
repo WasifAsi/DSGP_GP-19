@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import SectionHeading from "../components/SectionHeading";
-// import TeamMember from "../components/TeamMember";
-// import ContactForm from "../components/ContactForm";
-// import { ExternalLink, ArrowRight, Mail, Phone, MapPin } from "lucide-react";
-// import { Link } from "react-router-dom";
+//import TeamMember from "../components/TeamMember";
+//import ContactForm from "../components/ContactForm";
+import { ExternalLink, ArrowRight, Mail, Phone, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const About = () => {
 	useEffect(() => {
@@ -38,6 +38,13 @@ const About = () => {
 							environmental agencies, and policymakers to track
 							and respond to coastal changes.
 						</p>
+						<Link
+							to="/upload"
+							className="inline-flex items-center text-shoreline-blue hover:text-shoreline-dark transition-colors"
+						>
+							Try our analysis tools
+							<ArrowRight size={16} className="ml-2" />
+						</Link>
 						</div>
 
 		</div>
