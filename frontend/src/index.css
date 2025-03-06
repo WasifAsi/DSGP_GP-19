@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 50% 99%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 196 100% 39%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 196 100% 95%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 196 100% 39%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 196 100% 39%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 196 90% 20%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-medium tracking-tight;
+  }
+}
+
+.drop-area {
+  @apply border-2 border-dashed border-gray-300 rounded-lg p-12 transition-all duration-300 ease-in-out;
+}
+
+.drop-area:hover, .drop-area.dragging {
+  @apply border-shoreline-blue bg-shoreline-light-blue/30;
+}
+
+.file-type-badge {
+  @apply px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600;
+}
+
+.upload-progress-overlay {
+  @apply absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg z-10;
+}
+
+.section-divider {
+  @apply w-full h-[1px] bg-gradient-to-r from-transparent via-shoreline-blue/20 to-transparent my-16;
+}
+
+.glossy-card {
+  @apply bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg rounded-xl overflow-hidden transition-all duration-300;
+}
+
+.glossy-card:hover {
+  @apply shadow-xl border-shoreline-blue/20 transform scale-[1.01];
+}
+
+.feature-icon-container {
+  @apply w-12 h-12 flex items-center justify-center rounded-full bg-shoreline-light-blue text-shoreline-blue mb-4;
+}
+
+/* Custom animations for smoother page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 400ms, transform 400ms;
+}
+
+.page-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.upload-btn {
+  @apply relative overflow-hidden bg-shoreline-blue text-white font-medium rounded-md px-4 py-2 transition-all duration-300 hover:shadow-lg hover:shadow-shoreline-blue/20 active:scale-[0.98];
+}
+
+.upload-btn::before {
+  content: '';
+  @apply absolute top-0 left-0 w-full h-full bg-white/20 transform -translate-x-full skew-x-12;
+  transition: transform 0.7s ease;
+}
+
+.upload-btn:hover::before {
+  @apply transform translate-x-[120%];
+}
