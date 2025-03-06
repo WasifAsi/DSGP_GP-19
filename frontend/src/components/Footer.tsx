@@ -25,6 +25,44 @@ const Footer = () => {
 
           {/* to do */}
 
+          {/* Contact Information */}
+          <div className="space-y-6">
+            <h3 className="font-display font-medium text-xl text-shoreline-dark dark:text-white">
+              Get in Touch
+            </h3>
+            <address className="not-italic space-y-4">
+              {[
+                {
+                  icon: <MapPin size={20} />,
+                  content: "57, Ramakrishna Road, Colombo 06, Sri Lanka",
+                  href: "https://goo.gl/maps"
+                },
+                {
+                  icon: <Mail size={20} />,
+                  content: "contact@shorelineanalysis.org",
+                  href: "mailto:contact@shorelineanalysis.org"
+                },
+                {
+                  icon: <Phone size={20} />,
+                  content: "+94 11 234 5678",
+                  href: "tel:+94112345678"
+                }
+              ].map((item, index) => (
+                <motion.a
+                  key={index}
+                  href={item.href}
+                  whileHover={{ x: 5 }}
+                  className="flex items-center space-x-3 text-shoreline-text dark:text-gray-300 
+                           hover:text-shoreline-blue dark:hover:text-shoreline-blue transition-colors group"
+                >
+                  <span className="text-shoreline-blue group-hover:scale-110 transition-transform duration-300">
+                    {item.icon}
+                  </span>
+                  <span className="text-sm">{item.content}</span>
+                </motion.a>
+              ))}
+            </address>
+          </div>
         </motion.div>
 
         {/* Footer Bottom */}
