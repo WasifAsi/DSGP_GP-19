@@ -26,7 +26,6 @@ This project provides tools to detect and monitor coastal erosion patterns using
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/shoreline-analysis.git
 cd shoreline-analysis
 ```
 

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-// import { motion } from "framer-motion";
+import SectionHeading from "../components/SectionHeading";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
-// import UploadArea from "../components/UploadArea";
-// import SectionHeading from "../components/SectionHeading";
-// import { ArrowRight, Layers, Activity, Map } from "lucide-react";
+import UploadArea from "../components/UploadArea";
+import { ArrowRight, Layers, Activity, Map } from "lucide-react";
 
 const Upload = () => {
 	const [isUploading, setIsUploading] = useState(false);
@@ -95,7 +95,17 @@ const Upload = () => {
 
 	return (
 		<div className="pt-32 pb-24">
-			
+			<div className="container mx-auto px-4">
+				{/* todo  */}
+
+				<div className="mt-16 max-w-4xl mx-auto">
+					<UploadArea
+						onUpload={handleUpload}
+						isUploading={isUploading}
+						uploadProgress={uploadProgress}
+					/>
+				</div>
+			</div>
 		</div>
 	);
 };
