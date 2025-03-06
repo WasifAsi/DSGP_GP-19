@@ -25,6 +25,38 @@ const Footer = () => {
 
           {/* to do */}
 
+          {/* Quick Links */}
+          <div className="space-y-6">
+            <h3 className="font-display font-medium text-xl text-shoreline-dark dark:text-white">
+              Quick Links
+            </h3>
+            <ul className="space-y-3">
+              {[
+                { name: 'Home', path: '/' },
+                { name: 'Upload & Analysis', path: '/upload' },
+                { name: 'About Us', path: '/about' },
+                { name: 'Documentation', path: '/docs' }
+              ].map((link) => (
+                <motion.li
+                  key={link.path}
+                  whileHover={{ x: 5 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Link
+                    to={link.path}
+                    className="text-shoreline-text dark:text-gray-300 hover:text-shoreline-blue 
+                             dark:hover:text-shoreline-blue transition-colors text-sm inline-flex 
+                             items-center group"
+                  >
+                    <span className="h-1 w-4 bg-shoreline-blue/50 rounded mr-2 transform scale-x-0 
+                                 group-hover:scale-x-100 transition-transform duration-300" />
+                    {link.name}
+                  </Link>
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+
           {/* Contact Information */}
           <div className="space-y-6">
             <h3 className="font-display font-medium text-xl text-shoreline-dark dark:text-white">
