@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import SectionHeading from "../components/SectionHeading";
-//import TeamMember from "../components/TeamMember";
-//import ContactForm from "../components/ContactForm";
+import TeamMember from "../components/TeamMember";
+import ContactForm from "../components/ContactForm";
 import { ExternalLink, ArrowRight, Mail, Phone, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -56,12 +56,31 @@ const About = () => {
 					</div>
 
 				    <div className="section-divider" />
-					
+
 					<SectionHeading
 					eyebrow="Our Team"
 					title="Meet the Researchers"
 					subtitle="Our interdisciplinary team combines expertise in remote sensing, machine learning, environmental science, and coastal engineering."
-				/>
+				    />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+						<TeamMember
+						   name="Member Name"
+						   title="Lead Researcher"
+						   affiliation="Informatics Institute of Technology"
+						   description="Expert in coastal geomorphology with 10+ years of experience mapping Sri Lankan shorelines."
+						   imageSrc="/user.jpeg"
+						   delay={0}
+						/>
+
+                        <TeamMember
+						    name="Member Name"
+						    title="Machine Learning Engineer"
+						    affiliation="Informatics Institute of Technology"
+						    description="Specializes in geospatial analysis and applying image processing for environmental applications."
+						    imageSrc="/user.jpeg"
+						    delay={1}
+					    />
 
 				
 
