@@ -11,18 +11,6 @@ import {
 } from "lucide-react";
 import SectionHeading from "../components/SectionHeading";
 import AccordionItem from "../components/AccordionItem";
-// import { motion } from "framer-motion";
-// import { Link } from "react-router-dom";
-// import {
-// 	Satellite,
-// 	Brain,
-// 	MapPin,
-// 	ChevronRight,
-// 	Database,
-// 	Check,
-// } from "lucide-react";
-// import SectionHeading from "../components/SectionHeading";
-// import AccordionItem from "../components/AccordionItem";
 
 const Index = () => {
 	useEffect(() => {
@@ -75,6 +63,7 @@ const Index = () => {
 								</Link>
 							</div>
 						</motion.div>
+
 						<motion.div
 							initial={{ opacity: 0, y: 40 }}
 							animate={{ opacity: 1, y: 0 }}
@@ -188,6 +177,7 @@ const Index = () => {
 							centered={true}
 						/>
 					</motion.div>
+					
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
 						{[
 							{
@@ -267,6 +257,7 @@ const Index = () => {
 					</div>
 				</div>
 			</section>
+
 			{/* CTA Section */}
 			<section className="py-16 bg-shoreline-light-blue/30 dark:bg-shoreline-dark/50 rounded-3xl mx-4 md:mx-8 my-8">
 				<div className="container mx-auto px-4">
@@ -391,8 +382,6 @@ const Index = () => {
 					</div>
 				</div>
 			</section>
-									
-			
 		</div>
 	);
 };
