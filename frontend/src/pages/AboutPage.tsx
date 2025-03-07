@@ -46,6 +46,13 @@ const About = () => {
 							<ArrowRight size={16} className="ml-2" />
 						</Link>
 						</div>
+						<div className="relative">
+						<img
+							src="/coastal-research.jpg"
+							alt="Coastal research in action"
+							className="rounded-lg shadow-lg"
+						/>
+						</div>
 
 		</div>
 	);
