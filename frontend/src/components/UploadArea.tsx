@@ -186,8 +186,18 @@ const UploadArea = ({ onUpload, isUploading, uploadProgress }: UploadAreaProps) 
         )}
       </AnimatePresence>
       
-{/* todo   */}
-
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center text-sm text-red-800"
+        >
+          <AlertCircle size={16} className="mr-2 flex-shrink-0" />
+          {error}
+        </motion.div>
+      )}
+      
     </div>
   );
 };
