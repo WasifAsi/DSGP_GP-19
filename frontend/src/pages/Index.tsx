@@ -267,6 +267,34 @@ const Index = () => {
 					</div>
 				</div>
 			</section>
+			{/* CTA Section */}
+			<section className="py-16 bg-shoreline-light-blue/30 dark:bg-shoreline-dark/50 rounded-3xl mx-4 md:mx-8 my-8">
+				<div className="container mx-auto px-4">
+					<div className="max-w-3xl mx-auto text-center">
+						<motion.h2
+							initial={{ opacity: 0, y: 20 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5 }}
+							viewport={{ once: true, margin: "-100px" }}
+							className="text-3xl md:text-4xl font-display font-medium text-shoreline-dark dark:text-white mb-6"
+						>
+							Ready to analyze your coastal data?
+						</motion.h2>
+
+						<motion.p
+							initial={{ opacity: 0, y: 20 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.1 }}
+							viewport={{ once: true, margin: "-100px" }}
+							className="text-shoreline-text dark:text-gray-300 mb-8"
+						>
+							Upload your satellite images to get invaluable
+							insights about shoreline changes and coastal
+							patterns.
+						</motion.p>
+					</div>
+				</div>
+			</section>
 						
 			
 		</div>
