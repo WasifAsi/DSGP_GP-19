@@ -106,7 +106,19 @@ const About = () => {
 						<h3 className="text-lg font-medium text-shoreline-dark dark:text-white mb-2">
 							Project Supervision
 						</h3>
-						
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+							<div className="p-4">
+								<p className="text-shoreline-blue font-medium text-sm">
+									Project Supervisor
+								</p>
+								<h4 className="text-shoreline-dark dark:text-white font-medium mb-1">
+									Prof. Kavinda Silva
+								</h4>
+								<p className="text-sm text-shoreline-text dark:text-gray-400">
+									Informatics Institute of Technology
+								</p>
+							</div>
+
 				</div>		
 
 				
