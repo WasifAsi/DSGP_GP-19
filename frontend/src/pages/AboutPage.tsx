@@ -118,6 +118,17 @@ const About = () => {
 									Informatics Institute of Technology
 								</p>
 							</div>
+							<div className="p-4">
+								<p className="text-shoreline-blue font-medium text-sm">
+									Research Advisor
+								</p>
+								<h4 className="text-shoreline-dark dark:text-white font-medium mb-1">
+									Dr. Emily Anderson
+								</h4>
+								<p className="text-sm text-shoreline-text dark:text-gray-400">
+									Robert Gordon University
+								</p>
+							</div>
 
 				</div>		
 
