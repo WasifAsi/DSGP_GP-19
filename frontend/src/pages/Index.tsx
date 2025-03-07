@@ -292,6 +292,47 @@ const Index = () => {
 							insights about shoreline changes and coastal
 							patterns.
 						</motion.p>
+
+						<motion.div
+							initial={{ opacity: 0, y: 20 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.2 }}
+							viewport={{ once: true, margin: "-100px" }}
+							className="space-y-4"
+						>
+							<div className="flex items-center space-x-2 justify-center">
+								<Check className="w-5 h-5 text-green-500" />
+								<span className="text-shoreline-text dark:text-gray-300">
+									Automatic shoreline detection
+								</span>
+							</div>
+
+							<div className="flex items-center space-x-2 justify-center">
+								<Check className="w-5 h-5 text-green-500" />
+								<span className="text-shoreline-text dark:text-gray-300">
+									Precise measurement of change
+								</span>
+							</div>
+
+							<div className="flex items-center space-x-2 justify-center">
+								<Check className="w-5 h-5 text-green-500" />
+								<span className="text-shoreline-text dark:text-gray-300">
+									Time-sensitive rate calculations
+								</span>
+							</div>
+						</motion.div>
+
+						<motion.div
+							initial={{ opacity: 0, y: 20 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.3 }}
+							viewport={{ once: true, margin: "-100px" }}
+							className="mt-8"
+						>
+							<Link to="/upload" className="upload-btn">
+								Start Analyzing
+							</Link>
+						</motion.div>
 					</div>
 				</div>
 			</section>
