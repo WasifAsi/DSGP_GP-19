@@ -189,8 +189,62 @@ const Upload = () => {
 								))}
 							</div>
 
-							{/* todo  */}
+							{analysisComplete && (
+								<motion.div
+									initial={{ opacity: 0, height: 0 }}
+									animate={{ opacity: 1, height: "auto" }}
+									transition={{ duration: 0.5 }}
+									className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700"
+								>
+									<h3 className="text-lg font-medium text-shoreline-dark dark:text-white mb-4">
+										Analysis Results
+									</h3>
 
+									<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+										<div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
+											<div className="text-shoreline-blue font-medium mb-1">
+												Erosion Rate
+											</div>
+											<div className="text-2xl font-medium text-shoreline-dark dark:text-white">
+												-1.2 m/year
+											</div>
+										</div>
+
+										<div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
+											<div className="text-shoreline-blue font-medium mb-1">
+												Area Affected
+											</div>
+											<div className="text-2xl font-medium text-shoreline-dark dark:text-white">
+												2.3 km²
+											</div>
+										</div>
+
+										<div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
+											<div className="text-shoreline-blue font-medium mb-1">
+												Confidence Level
+											</div>
+											<div className="text-2xl font-medium text-shoreline-dark dark:text-white">
+												92%
+											</div>
+										</div>
+									</div>
+
+									<div className="flex flex-col md:flex-row gap-4">
+										<button className="flex items-center justify-center px-6 py-3 bg-shoreline-blue text-white font-medium rounded-lg shadow-md hover:shadow-lg hover:shadow-shoreline-blue/20 transition-all duration-300">
+											<Layers
+												size={18}
+												className="mr-2"
+											/>
+											View Detailed Report
+										</button>
+
+										<button className="flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-700 text-shoreline-dark dark:text-white rounded-lg hover:border-shoreline-blue hover:text-shoreline-blue transition-all duration-300">
+											<Map size={18} className="mr-2" />
+											Open Visualization
+										</button>
+									</div>
+								</motion.div>
+							)}
 						</div>
 					</motion.div>
 				)}
