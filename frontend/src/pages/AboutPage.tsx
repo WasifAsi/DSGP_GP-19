@@ -52,7 +52,18 @@ const About = () => {
 							alt="Coastal research in action"
 							className="rounded-lg shadow-lg"
 						/>
-						</div>
+						<div className="absolute inset-0 bg-gradient-to-r from-shoreline-blue/20 to-transparent rounded-lg" />
+					</div>
+
+				    <div className="section-divider" />
+					
+					<SectionHeading
+					eyebrow="Our Team"
+					title="Meet the Researchers"
+					subtitle="Our interdisciplinary team combines expertise in remote sensing, machine learning, environmental science, and coastal engineering."
+				/>
+
+				
 
 		</div>
 	);
