@@ -101,6 +101,14 @@ const About = () => {
 					    />
 				</div>
 
+				<div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+					<div className="bg-white dark:bg-shoreline-dark/30 p-6 rounded-xl shadow-md">
+						<h3 className="text-lg font-medium text-shoreline-dark dark:text-white mb-2">
+							Project Supervision
+						</h3>
+						
+				</div>		
+
 				
 
 		</div>
