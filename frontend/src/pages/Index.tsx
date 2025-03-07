@@ -188,6 +188,83 @@ const Index = () => {
 							centered={true}
 						/>
 					</motion.div>
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
+						{[
+							{
+								icon: <Satellite size={24} />,
+								title: "Sentinel-2 Satellite Images",
+								description:
+									"Leverages high-resolution Sentinel-2 satellite imagery to detect and monitor shoreline changes with precision.",
+								gradient: "from-blue-500/20 to-cyan-500/20",
+							},
+							{
+								icon: <Brain size={24} />,
+								title: "Machine Learning Analysis",
+								description:
+									"Advanced algorithms process complex shoreline patterns and detect trends that would be missed with conventional analyses.",
+								gradient: "from-purple-500/20 to-pink-500/20",
+							},
+							{
+								icon: <Database size={24} />,
+								title: "Digital Shoreline Analysis",
+								description:
+									"Complex shoreline statistical analysis of shoreline movement using Digital Shoreline Analysis System (DSAS).",
+								gradient: "from-emerald-500/20 to-teal-500/20",
+							},
+							{
+								icon: <MapPin size={24} />,
+								title: "GIS Integration",
+								description:
+									"Geospatial information systems tools for accurate mapping and visualization of coastal erosion patterns.",
+								gradient: "from-amber-500/20 to-orange-500/20",
+							},
+						].map((feature, index) => (
+							<motion.div
+								key={feature.title}
+								initial={{ opacity: 0, y: 20 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								transition={{
+									duration: 0.5,
+									delay: index * 0.1,
+								}}
+								viewport={{ once: true }}
+								className="group"
+							>
+								<div
+									className="h-full bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl p-8 
+									shadow-lg hover:shadow-xl transition-all duration-300 
+									border border-gray-200/50 dark:border-gray-700/50 relative overflow-hidden"
+								>
+									{/* Gradient Background */}
+									<div
+										className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} 
+									opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+									/>
+
+									{/* Content */}
+									<div className="relative z-10">
+										<div
+											className="w-14 h-14 rounded-xl bg-shoreline-blue/10 dark:bg-shoreline-blue/20 
+										flex items-center justify-center mb-6 group-hover:scale-110 
+										transition-transform duration-300"
+										>
+											<div className="text-shoreline-blue">
+												{feature.icon}
+											</div>
+										</div>
+
+										<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-4">
+											{feature.title}
+										</h3>
+
+										<p className="text-shoreline-text dark:text-gray-300 leading-relaxed">
+											{feature.description}
+										</p>
+									</div>
+								</div>
+							</motion.div>
+						))}
+					</div>
 				</div>
 			</section>
 						
