@@ -353,6 +353,42 @@ const Index = () => {
 						subtitle="Get answers to common questions about our shoreline analysis tools and methodology."
 						centered={true}
 					/>
+
+					<div className="max-w-3xl mx-auto mt-12">
+						<motion.div
+							initial={{ opacity: 0, y: 20 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.6 }}
+							viewport={{ once: true }}
+							className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl"
+						>
+							<AccordionItem
+								question="What types of satellite images can I use for analysis?"
+								answer="Our system works best with Sentinel-2 satellite images with a resolution of 10m or better. We support PNG, JPEG, and TIFF formats, with a maximum file size of 10MB per upload."
+								isOpen={true}
+							/>
+
+							<AccordionItem
+								question="How does the shoreline detection algorithm work?"
+								answer="Our algorithm uses a combination of machine learning and spectral analysis to detect land-water boundaries. It's been trained on thousands of Sri Lankan coastal images and can accurately identify shorelines even in complex coastal environments."
+							/>
+
+							<AccordionItem
+								question="What information does the analysis provide?"
+								answer="The analysis provides quantitative data on shoreline position changes, erosion/accretion rates, hotspot areas of significant change, and statistical confidence levels for the detected changes."
+							/>
+
+							<AccordionItem
+								question="How accurate are the shoreline change estimates?"
+								answer="Accuracy depends on image quality, but typically our system achieves accuracy levels of ±2-3 meters for shoreline position and ±0.5 meters/year for erosion rates when using high-quality Sentinel-2 imagery."
+							/>
+
+							<AccordionItem
+								question="Can I analyze my coastal region, or only specific areas in Sri Lanka?"
+								answer="While our system is optimized for Sri Lankan coastlines, it can analyze any coastal region. However, accuracy may vary for regions with vastly different coastal characteristics than those in our training dataset."
+							/>
+						</motion.div>
+					</div>
 				</div>
 			</section>
 									
