@@ -160,6 +160,36 @@ const Index = () => {
 					</div>
 				</div>
 			</section>
+
+			{/* Features Section */}
+			<section className="relative py-24">
+				{/* Background Elements */}
+				<div className="absolute inset-0 bg-gradient-to-b from-transparent via-shoreline-light-blue/5 to-transparent" />
+				<div className="absolute inset-0 bg-grid-pattern opacity-5" />
+
+				<div className="container mx-auto px-4 relative">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.6 }}
+						viewport={{ once: true }}
+					>
+						<SectionHeading
+							eyebrow="Technologies"
+							title={
+								<>
+									Advanced Tools for{" "}
+									<span className="text-shoreline-blue">
+										Shoreline Analysis
+									</span>
+								</>
+							}
+							subtitle="Our project integrates cutting-edge technologies to create an effective monitoring tool for Sri Lanka's changing coastlines."
+							centered={true}
+						/>
+					</motion.div>
+				</div>
+			</section>
 						
 			
 		</div>
