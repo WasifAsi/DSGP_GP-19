@@ -117,13 +117,77 @@ const Upload = () => {
 						transition={{ duration: 0.5 }}
 						className="mt-16 max-w-3xl mx-auto"
 					>
-
 						<div className="bg-white dark:bg-gray-800/30 rounded-xl shadow-lg p-8">
 							<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-6">
 								Analysis Progress
 							</h3>
 
-							
+							<div className="space-y-6">
+								{analysisSteps.map((step, index) => (
+									<div
+										key={index}
+										className="flex items-start"
+									>
+										<div
+											className={`w-8 h-8 rounded-full flex items-center justify-center mr-4 flex-shrink-0 ${
+												analysisStep > index
+													? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+													: analysisStep === index
+													? "bg-shoreline-light-blue text-shoreline-blue"
+													: "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
+											}`}
+										>
+											{analysisStep > index ? (
+												<svg
+													className="w-5 h-5"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+													xmlns="http://www.w3.org/2000/svg"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth="2"
+														d="M5 13l4 4L19 7"
+													></path>
+												</svg>
+											) : (
+												<span>{index + 1}</span>
+											)}
+										</div>
+
+										<div className="flex-1">
+											<div className="flex justify-between">
+												<h4
+													className={`font-medium ${
+														analysisStep >= index
+															? "text-shoreline-dark dark:text-white"
+															: "text-gray-400 dark:text-gray-500"
+													}`}
+												>
+													{step.name}
+												</h4>
+												{analysisStep === index &&
+													!analysisComplete && (
+														<div className="animate-pulse text-shoreline-blue text-sm">
+															Processing...
+														</div>
+													)}
+											</div>
+											<p
+												className={`text-sm ${
+													analysisStep >= index
+														? "text-shoreline-text dark:text-gray-300"
+														: "text-gray-400 dark:text-gray-500"
+												}`}
+											>
+												{step.description}
+											</p>
+										</div>
+									</div>
+								))}
+							</div>
 
 							{/* todo  */}
 
