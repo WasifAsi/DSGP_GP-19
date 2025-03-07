@@ -336,7 +336,26 @@ const Index = () => {
 					</div>
 				</div>
 			</section>
-						
+
+			{/* FAQ Section */}
+			<section className="py-16">
+				<div className="container mx-auto px-4">
+					<SectionHeading
+						eyebrow="FAQ"
+						title={
+							<>
+								Frequently Asked{" "}
+								<span className="text-shoreline-blue">
+									Questions
+								</span>
+							</>
+						}
+						subtitle="Get answers to common questions about our shoreline analysis tools and methodology."
+						centered={true}
+					/>
+				</div>
+			</section>
+									
 			
 		</div>
 	);
