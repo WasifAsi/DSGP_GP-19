@@ -82,6 +82,25 @@ const About = () => {
 						    delay={1}
 					    />
 
+                        <TeamMember
+						    name="Member Name"
+						    title="Software Development Engineer"
+						    affiliation="Robert Gordon University"
+						    description="Develops algorithms for automated shoreline detection to enhance precision."
+						    imageSrc="/user.jpeg"
+						    delay={2}
+					    />
+
+					    <TeamMember
+						    name="Member Name"
+						    title="Environmental Scientist"
+						    affiliation="Robert Gordon University"
+						    description="Studies coastal ecosystems and the environmental impact of shoreline changes."
+						    imageSrc="/user.jpeg"
+						    delay={3}
+					    />
+				</div>
+
 				
 
 		</div>
