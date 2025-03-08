@@ -144,6 +144,13 @@ const About = () => {
 							Resource Management for providing data access and
 							field support.
 						</p>
+						<a
+							href="#"
+							className="inline-flex items-center text-shoreline-blue hover:underline font-medium text-sm"
+						>
+							<span>Visit Funding Partners</span>
+							<ExternalLink size={14} className="ml-1" />
+						</a>
 
 				</div>		
 
