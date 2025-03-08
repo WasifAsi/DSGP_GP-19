@@ -207,6 +207,22 @@ const About = () => {
 									</a>
 								</div>
 							</div>
+							<div className="flex items-start">
+								<div className="w-10 h-10 rounded-full bg-shoreline-light-blue/50 flex items-center justify-center mr-4 flex-shrink-0">
+									<MapPin className="h-5 w-5 text-shoreline-blue" />
+								</div>
+								<div>
+									<h4 className="font-medium text-shoreline-dark dark:text-white mb-1">
+										Address
+									</h4>
+									<address className="not-italic text-shoreline-text dark:text-gray-300">
+										57, Ramakrishna Road
+										<br />
+										Colombo 06, Sri Lanka
+									</address>
+								</div>
+							</div>
+						</div>
 
 
 
