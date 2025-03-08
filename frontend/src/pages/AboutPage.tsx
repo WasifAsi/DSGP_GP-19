@@ -129,6 +129,21 @@ const About = () => {
 									Robert Gordon University
 								</p>
 							</div>
+							</div>
+					</div>
+
+					<div className="bg-white dark:bg-shoreline-dark/30 p-6 rounded-xl shadow-md">
+						<h3 className="text-lg font-medium text-shoreline-dark dark:text-white mb-4">
+							Acknowledgements
+						</h3>
+						<p className="text-shoreline-text dark:text-gray-300 mb-4">
+							This research is supported by grants from the
+							National Science Foundation of Sri Lanka and the
+							Environmental Protection Agency. We also thank the
+							Department of Coast Conservation and Coastal
+							Resource Management for providing data access and
+							field support.
+						</p>
 
 				</div>		
 
