@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CameraIcon, Database, BarChart3, BrainCircuit, Image } from 'lucide-react';
+import { CameraIcon,BrainCircuit, Image } from 'lucide-react';
 
 const ModelDiagram = () => {
   return (
@@ -34,7 +34,7 @@ const ModelDiagram = () => {
           <BrainCircuit size={40} className="text-white" />
         </motion.div>
         <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 text-center">
-          <p className="font-medium text-shoreline-dark dark:text-white">AI Core</p>
+          <p className="font-medium text-shoreline-dark dark:text-white">ML Core</p>
         </div>
       </motion.div>
 

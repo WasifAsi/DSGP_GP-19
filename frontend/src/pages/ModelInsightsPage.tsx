@@ -143,8 +143,8 @@ const ModelInsightsPage: React.FC = () => {
 								transition={{ duration: 0.5, delay: 0.2 }}
 							>
 								<SectionHeading
-									eyebrow="AI Insights"
-									title="Powering Shoreline Analysis with Advanced AI"
+									eyebrow="ML Insights"
+									title="Powering Shoreline Analysis with Advanced ML"
 									subtitle="Discover how our advanced machine learning models analyze satellite imagery to accurately detect and predict coastal changes. Leveraging state-of-the-art deep learning techniques such as U-Net, SegNet, DeepLab v3, and FCN-8, our models efficiently identify patterns of erosion, sediment movement, flooding, and ecological shifts."
 									centered={false}
 								/>
@@ -175,7 +175,7 @@ const ModelInsightsPage: React.FC = () => {
 					<SectionHeading
 						eyebrow="Performance"
 						title="Model Metrics"
-						subtitle="Detailed performance metrics for each AI model in our system"
+						subtitle="Detailed performance metrics for each ML model in our system"
 						centered={true}
 					/>
 					<div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -190,12 +190,12 @@ const ModelInsightsPage: React.FC = () => {
 					<SectionHeading
 						eyebrow="FAQ"
 						title="Common Questions"
-						subtitle="Learn more about our AI models and how they work"
+						subtitle="Learn more about our ML models and how they work"
 						centered={true}
 					/>
 					<div className="mt-12 max-w-3xl mx-auto">
 						{[
-							"Why did we choose these specific AI models?",
+							"Why did we choose these specific ML models?",
 							"How accurate are the shoreline predictions?",
 							"How often are the models retrained?",
 							"Can these models predict erosion rates?",
