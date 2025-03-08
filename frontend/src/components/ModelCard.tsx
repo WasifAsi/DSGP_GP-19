@@ -11,10 +11,10 @@ interface ModelMetrics {
 interface Model {
 	id: string;
 	name: string;
-	fullName: string;
+	fullNamePerformance: string;
+	descriptionPerformance: string;
 	type: string;
 	purpose: string;
-	description: string;
 	metrics: ModelMetrics;
 	color: string;
 }
@@ -44,48 +44,50 @@ const ModelCard = ({ model }: ModelCardProps) => {
 			whileInView={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.5 }}
 			viewport={{ once: true, margin: "-100px" }}
-			className={`
-        glossy-card p-6 border-2 transition-all
-        bg-white dark:bg-gray-800
-        ${
-			isHovered
-				? `border-[${model.color}] shadow-lg dark:shadow-[${model.color}]/20`
-				: "border-transparent hover:border-gray-200 dark:hover:border-gray-600"
-		}
-      `}
+			className={`glossy-card p-6 border-2 transition-all bg-white dark:bg-gray-800
+				${isHovered ? "shadow-lg scale-105" : "hover:border-gray-300 dark:hover:border-gray-600"}
+			`}
+			style={{
+				borderColor: isHovered ? model.color : "transparent",
+				boxShadow: isHovered ? `0 4px 10px ${model.color}30` : "none",
+			}}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 		>
+			{/* Model Title */}
 			<div className="flex justify-between items-start mb-4">
 				<div>
 					<h3 className="text-xl font-medium text-gray-900 dark:text-white">
 						{model.name}
 					</h3>
 					<p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-						{model.fullName}
+						{model.fullNamePerformance}
 					</p>
 				</div>
 			</div>
 
+			{/* Tags */}
 			<div className="mb-4">
-				<div className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 mb-2">
+				<span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
 					{model.type}
-				</div>
-				<div
-					className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-2 ml-2"
+				</span>
+				<span
+					className="inline-block px-3 py-1 rounded-full text-xs font-medium ml-2"
 					style={{
 						backgroundColor: `${model.color}20`,
 						color: model.color,
 					}}
 				>
 					{model.purpose}
-				</div>
+				</span>
 			</div>
 
+			{/* Model Description */}
 			<p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
-				{model.description}
+				{model.descriptionPerformance}
 			</p>
 
+			{/* Model Metrics */}
 			<div className="space-y-3">
 				{Object.entries(model.metrics).map(([key, value]) => (
 					<div key={key}>
