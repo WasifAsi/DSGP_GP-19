@@ -162,6 +162,54 @@ const About = () => {
 					subtitle="Have questions about our research or interested in collaboration? We'd love to hear from you."
 				/>
 
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mt-12">
+					<div>
+						<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-6">
+							Get in Touch
+						</h3>
+						<p className="text-shoreline-text dark:text-gray-300 mb-8">
+							Have questions about our research or interested in
+							collaboration? Reach out to our team through this
+							form or the contact details provided.
+						</p>
+
+						<div className="space-y-6">
+							<div className="flex items-start">
+								<div className="w-10 h-10 rounded-full bg-shoreline-light-blue/50 flex items-center justify-center mr-4 flex-shrink-0">
+									<Mail className="h-5 w-5 text-shoreline-blue" />
+								</div>
+								<div>
+									<h4 className="font-medium text-shoreline-dark dark:text-white mb-1">
+										Email
+									</h4>
+									<a
+										href="mailto:contact@shorelineanalysis.org"
+										className="text-shoreline-text dark:text-gray-300 hover:text-shoreline-blue dark:hover:text-shoreline-blue transition-colors"
+									>
+										contact@shorelineanalysis.org
+									</a>
+								</div>
+							</div>
+
+							<div className="flex items-start">
+								<div className="w-10 h-10 rounded-full bg-shoreline-light-blue/50 flex items-center justify-center mr-4 flex-shrink-0">
+									<Phone className="h-5 w-5 text-shoreline-blue" />
+								</div>
+								<div>
+									<h4 className="font-medium text-shoreline-dark dark:text-white mb-1">
+										Phone
+									</h4>
+									<a
+										href="tel:+94 11 234 5678"
+										className="text-shoreline-text dark:text-gray-300 hover:text-shoreline-blue dark:hover:text-shoreline-blue transition-colors"
+									>
+										+94 11 234 5678
+									</a>
+								</div>
+							</div>
+
+
+
 
 				</div>		
 
