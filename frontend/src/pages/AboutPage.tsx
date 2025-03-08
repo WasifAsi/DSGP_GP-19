@@ -151,6 +151,17 @@ const About = () => {
 							<span>Visit Funding Partners</span>
 							<ExternalLink size={14} className="ml-1" />
 						</a>
+						</div>
+				</div>
+
+				<div className="section-divider" />
+
+				<SectionHeading
+					eyebrow="Contact"
+					title="Get in Touch"
+					subtitle="Have questions about our research or interested in collaboration? We'd love to hear from you."
+				/>
+
 
 				</div>		
 
