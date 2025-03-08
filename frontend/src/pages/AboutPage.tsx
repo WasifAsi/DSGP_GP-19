@@ -223,6 +223,18 @@ const About = () => {
 								</div>
 							</div>
 						</div>
+						<div className="mt-8 h-64 rounded-xl overflow-hidden">
+							<iframe
+								src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d63371.80385596634!2d79.83789389349902!3d6.927079595149932!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae253d10f7a7003%3A0x320b2e4d32d3838d!2sColombo%2C%20Sri%20Lanka!5e0!3m2!1sen!2sus!4v1616418743741!5m2!1sen!2sus"
+								width="100%"
+								height="100%"
+								style={{ border: 0 }}
+								allowFullScreen={true}
+								loading="lazy"
+								title="Map of Colombo, Sri Lanka"
+							></iframe>
+						</div>
+					</div>
 
 
 
