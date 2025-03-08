@@ -249,8 +249,70 @@ const Upload = () => {
 					</motion.div>
 				)}
 
-				{/* todo  */}
+<div className="mt-24">
+					<SectionHeading
+						eyebrow="How It Works"
+						title="Our Analysis Process"
+						subtitle="Understanding how we transform satellite imagery into actionable insights for coastal management"
+					/>
 
+					<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
+						<div className="bg-white dark:bg-shoreline-dark/30 p-6 rounded-xl shadow-md relative">
+							<div className="w-12 h-12 rounded-full bg-shoreline-light-blue/50 flex items-center justify-center mb-4">
+								<Layers
+									size={24}
+									className="text-shoreline-blue"
+								/>
+							</div>
+							<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-3">
+								Image Pre-processing
+							</h3>
+							<p className="text-shoreline-text dark:text-gray-300 mb-4">
+								We apply advanced corrections to enhance
+								satellite imagery quality before analysis,
+								including atmospheric correction and cloud
+								removal.
+							</p>
+							<ArrowRight className="absolute right-6 bottom-6 text-shoreline-blue hidden lg:block" />
+						</div>
+
+						<div className="bg-white dark:bg-shoreline-dark/30 p-6 rounded-xl shadow-md relative">
+							<div className="w-12 h-12 rounded-full bg-shoreline-light-blue/50 flex items-center justify-center mb-4">
+								<Activity
+									size={24}
+									className="text-shoreline-blue"
+								/>
+							</div>
+							<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-3">
+								ML Shoreline Detection
+							</h3>
+							<p className="text-shoreline-text dark:text-gray-300 mb-4">
+								Our machine learning algorithms precisely
+								identify the land-water boundary with high
+								accuracy, even in complex coastal environments.
+							</p>
+							<ArrowRight className="absolute right-6 bottom-6 text-shoreline-blue hidden lg:block" />
+						</div>
+
+						<div className="bg-white dark:bg-shoreline-dark/30 p-6 rounded-xl shadow-md relative">
+							<div className="w-12 h-12 rounded-full bg-shoreline-light-blue/50 flex items-center justify-center mb-4">
+								<Map
+									size={24}
+									className="text-shoreline-blue"
+								/>
+							</div>
+							<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-3">
+								Change Measurement
+							</h3>
+							<p className="text-shoreline-text dark:text-gray-300 mb-4">
+								We calculate shoreline changes by comparing
+								historical data with current images, providing
+								insights into erosion and accretion patterns.
+							</p>
+							<ArrowRight className="absolute right-6 bottom-6 text-shoreline-blue hidden lg:block" />
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	);
