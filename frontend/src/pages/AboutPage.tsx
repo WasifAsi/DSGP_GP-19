@@ -236,14 +236,14 @@ const About = () => {
 						</div>
 					</div>
 
-
-
-
-				</div>		
-
-				
-
-		</div>
+					<div className="bg-white dark:bg-shoreline-dark/30 p-8 rounded-xl shadow-md">
+						<h3 className="text-xl font-medium text-shoreline-dark dark:text-white mb-6">
+							Send Us a Message
+						</h3>
+						<ContactForm />
+					</div>
+				</div>
+			</div>
 	);
 };
 export default About;
