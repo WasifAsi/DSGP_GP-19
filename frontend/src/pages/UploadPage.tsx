@@ -15,46 +15,42 @@ const Upload = () => {
 		window.scrollTo(0, 0);
 	}, []);
 
-	const handleUpload = (file: File) => {
-		// Validate file
-		if (!file) {
-			toast.error("Please select a file to upload");
-			return;
-		}
+	const [uploadedImage, setUploadedImage] = useState<string | null>(null);
 
-		// Validate file type (assuming we accept image files)
-		const allowedTypes = ["image/jpeg", "image/png", "image/tiff"];
-		if (!allowedTypes.includes(file.type)) {
-			toast.error(
-				"Please upload a valid image file (JPEG, PNG, or TIFF)"
-			);
-			return;
-		}
+const handleUpload = async (file: File) => {
+    if (!file) {
+        toast.error("Please select a file to upload");
+        return;
+    }
 
-		// Validate file size (e.g., max 50MB)
-		const maxSize = 50 * 1024 * 1024; // 50MB in bytes
-		if (file.size > maxSize) {
-			toast.error("File size must be less than 50MB");
-			return;
-		}
+    const formData = new FormData();
+    formData.append("file", file);
 
-		setIsUploading(true);
-		setUploadProgress(0);
-		setAnalysisStep(0);
-		setAnalysisComplete(false);
+    try {
+        setIsUploading(true);
+        setUploadProgress(0);
 
-		// Simulate upload progress
-		const interval = setInterval(() => {
-			setUploadProgress((prev) => {
-				if (prev >= 100) {
-					clearInterval(interval);
-					startAnalysis();
-					return 100;
-				}
-				return prev + 5;
-			});
-		}, 200);
-	};
+        const response = await fetch("http://127.0.0.1:5000/upload", {
+            method: "POST",
+            body: formData,
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            toast.success("File uploaded successfully!");
+            console.log("Uploaded file path:", result.file_path);
+            setUploadedImage(`http://127.0.0.1:5000/${result.file_path}`); // Update state to show image
+        } else {
+            toast.error(result.error);
+        }
+    } catch (error) {
+        toast.error("Upload failed. Please try again.");
+        console.error(error);
+    } finally {
+        setIsUploading(false);
+    }
+};
 
 	const startAnalysis = () => {
 		setIsUploading(false);
