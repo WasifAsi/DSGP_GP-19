@@ -34,4 +34,25 @@ interface TeamMemberProps {
       <p className="text-xs text-shoreline-text dark:text-gray-400 mb-3">{affiliation}</p>
       
       <p className="text-sm text-shoreline-text dark:text-gray-300 mb-4">{description}</p>
+
+      <div className="flex space-x-3">
+        <a
+        href="#"
+        className="w-8 h-8 flex items-center justify-center rounded-full bg-shoreline-light-blue/50 text-shoreline-blue hover:bg-shoreline-blue hover:text-white transition-colors dark:bg-shoreline-blue/20"
+        >
+        <Linkedin size={16} />
+        </a>
+        <a
+        href="#"
+        className="w-8 h-8 flex items-center justify-center rounded-full bg-shoreline-light-blue/50 text-shoreline-blue hover:bg-shoreline-blue hover:text-white transition-colors dark:bg-shoreline-blue/20"
+        >
+        <Mail size={16} />
+        </a>
+      </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default TeamMember;
       
