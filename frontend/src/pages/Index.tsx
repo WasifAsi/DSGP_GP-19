@@ -196,16 +196,16 @@ const Index = () => {
 							},
 							{
 								icon: <Database size={24} />,
-								title: "Digital Shoreline Analysis",
+								title: "Coastal Change Monitoring",
 								description:
-									"Complex shoreline statistical analysis of shoreline movement using Digital Shoreline Analysis System (DSAS).",
+									"Tracking and analyzing long-term shoreline variations using remote sensing and historical satellite imagery.",
 								gradient: "from-emerald-500/20 to-teal-500/20",
 							},
 							{
 								icon: <MapPin size={24} />,
-								title: "GIS Integration",
+								title: "Statistical Analysis",
 								description:
-									"Geospatial information systems tools for accurate mapping and visualization of coastal erosion patterns.",
+									"Applying advanced statistical methods to analyze shoreline movement trends and quantify coastal changes over time.",
 								gradient: "from-amber-500/20 to-orange-500/20",
 							},
 						].map((feature, index) => (
