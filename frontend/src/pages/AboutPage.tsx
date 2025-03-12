@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import SectionHeading from "../components/SectionHeading";
-import TeamMember from "../components/TeamMember";
-import ContactForm from "../components/ContactForm";
+import TeamMember from "../components/TeamMember.tsx";
+import ContactForm from "../components/ContactForm.tsx";
 import { ExternalLink, ArrowRight, Mail, Phone, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -65,38 +65,38 @@ const About = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
 						<TeamMember
-						   name="Member Name"
-						   title="Lead Researcher"
+						   name="Wasif Asi"
+						   title="Team Leader"
 						   affiliation="Informatics Institute of Technology"
-						   description="Expert in coastal geomorphology with 10+ years of experience mapping Sri Lankan shorelines."
 						   imageSrc="/user.jpeg"
+						   description=""
 						   delay={0}
 						/>
 
                         <TeamMember
-						    name="Member Name"
-						    title="Machine Learning Engineer"
+						    name="Kalhara Peiris"
+						    title="Team Member"
 						    affiliation="Informatics Institute of Technology"
-						    description="Specializes in geospatial analysis and applying image processing for environmental applications."
 						    imageSrc="/user.jpeg"
+							description=""
 						    delay={1}
 					    />
 
                         <TeamMember
-						    name="Member Name"
-						    title="Software Development Engineer"
-						    affiliation="Robert Gordon University"
-						    description="Develops algorithms for automated shoreline detection to enhance precision."
+						    name="Ravisha De Alwis"
+						    title="Team Member"
+						    affiliation="Informatics Institute of Technology"
 						    imageSrc="/user.jpeg"
+							description=""
 						    delay={2}
 					    />
 
 					    <TeamMember
-						    name="Member Name"
-						    title="Environmental Scientist"
-						    affiliation="Robert Gordon University"
-						    description="Studies coastal ecosystems and the environmental impact of shoreline changes."
+						    name="Praveen Sooriyapperuma"
+						    title="Team Member"
+						    affiliation="Informatics Institute of Technology"
 						    imageSrc="/user.jpeg"
+							description=""
 						    delay={3}
 					    />
 				</div>
@@ -112,7 +112,7 @@ const About = () => {
 									Project Supervisor
 								</p>
 								<h4 className="text-shoreline-dark dark:text-white font-medium mb-1">
-									Prof. Kavinda Silva
+									Mr.Mohamed Ayoob
 								</h4>
 								<p className="text-sm text-shoreline-text dark:text-gray-400">
 									Informatics Institute of Technology
@@ -120,13 +120,13 @@ const About = () => {
 							</div>
 							<div className="p-4">
 								<p className="text-shoreline-blue font-medium text-sm">
-									Research Advisor
+									Advisor
 								</p>
 								<h4 className="text-shoreline-dark dark:text-white font-medium mb-1">
-									Dr. Emily Anderson
+									Mr.Prasan Yapa
 								</h4>
 								<p className="text-sm text-shoreline-text dark:text-gray-400">
-									Robert Gordon University
+								    Informatics Institute of Technology
 								</p>
 							</div>
 							</div>
@@ -137,12 +137,7 @@ const About = () => {
 							Acknowledgements
 						</h3>
 						<p className="text-shoreline-text dark:text-gray-300 mb-4">
-							This research is supported by grants from the
-							National Science Foundation of Sri Lanka and the
-							Environmental Protection Agency. We also thank the
-							Department of Coast Conservation and Coastal
-							Resource Management for providing data access and
-							field support.
+						This research benefited from valuable insights provided by Dr. W.A.A.D. Lanka Wickramasinghe, Dean of the Faculty of Fisheries and Marine Sciences. We also thank all relevant stakeholders for their support in refining the shoreline analysis and coastal management methodology.
 						</p>
 						<a
 							href="#"
