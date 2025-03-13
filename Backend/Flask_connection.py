@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 
 from U_net_arciteuture import load_U_net_model, U_net_predict, U_net_save_segmented_image
+from deepLabV3_architecture import load_Deeplab_model , run
 
 app = Flask(__name__)
 CORS(app)
@@ -19,7 +20,7 @@ os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 # Load the models 
 U_net_model = load_U_net_model()
-
+DeepLab_model = load_Deeplab_model()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -42,12 +43,18 @@ def upload_file():
 
         result_paths = {}
 
+        # U-Net Prediction and Saving
         outputs_unet = U_net_predict(file_path, U_net_model)
         result_filename = f"U-Net_segmented_{file.filename}"
         result_path = os.path.join(app.config['RESULT_FOLDER'], result_filename)
         U_net_save_segmented_image(outputs_unet, result_path)
         result_paths['U-Net'] = f"/result/{result_filename}"
+        
 
+        # DeepLabV3 Prediction and Saving
+        deeplab_result_filename = f"deeplab_segmented_{file.filename}"
+        deeplab_result_path = os.path.join(app.config['RESULT_FOLDER'], deeplab_result_filename)
+        run(file_path, DeepLab_model, deeplab_result_path)
         
         return jsonify({'message': 'File processed successfully', 'results': result_paths}), 200
 
