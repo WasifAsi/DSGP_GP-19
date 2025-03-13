@@ -7,11 +7,24 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node modules
 node_modules
+
+# Build output
 dist
 dist-ssr
+build
+
+# Environment files for React and Node
 *.local
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+
+# React specific environment variables
+REACT_APP_*
 
 # Editor directories and files
 .vscode/*
