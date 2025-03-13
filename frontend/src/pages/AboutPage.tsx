@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import SectionHeading from "../components/SectionHeading";
-import TeamMember from "../components/TeamMember.tsx";
-import ContactForm from "../components/ContactForm.tsx";
+import TeamMember from "../components/TeamMember";
+import ContactForm from "../components/ContactForm";
 import { ExternalLink, ArrowRight, Mail, Phone, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -48,7 +48,7 @@ const About = () => {
 						</div>
 						<div className="relative">
 						<img
-							src="/coastal-research.jpg"
+							src="\coastal-research.jpg"
 							alt="Coastal research in action"
 							className="rounded-lg shadow-lg"
 						/>
