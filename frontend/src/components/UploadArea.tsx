@@ -116,6 +116,7 @@ const UploadArea = ({ onUpload, isUploading, uploadProgress }: UploadAreaProps) 
               <div className="flex space-x-4 mb-6">
                 <span className="file-type-badge">PNG</span>
                 <span className="file-type-badge">JPEG</span>
+
                 <span className="file-type-badge">Max: 10MB</span>
               </div>
               
@@ -197,7 +198,7 @@ const UploadArea = ({ onUpload, isUploading, uploadProgress }: UploadAreaProps) 
           {error}
         </motion.div>
       )}
-      
+
     </div>
   );
 };
