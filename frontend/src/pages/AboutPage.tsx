@@ -11,14 +11,13 @@ const About = () => {
 	}, []);
 	return (
 		<div className="pt-32 pb-24">
-			<div className="container mx-auto px-4"></div>
-			<SectionHeading
+			<div className="container mx-auto px-4">
+				<SectionHeading
 					eyebrow="About Us"
 					title="The Team Behind Shoreline Analysis"
 					subtitle="Our interdisciplinary team brings together expertise from the Informatics Institute of Technology and Robert Gordon University to address critical coastal management challenges in Sri Lanka."
 				/>
 			
-
 				<div className="section-divider" />
 
 				<div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -27,7 +26,6 @@ const About = () => {
 								Why We Started
 						</h3>
 						<p className="text-shoreline-text dark:text-gray-300 mb-6">
-
 							Our project began in response to the growing
 							challenges facing Sri Lanka's coastlines. With
 							rising sea levels and increasing coastal
@@ -58,7 +56,6 @@ const About = () => {
 						/>
 						<div className="absolute inset-0 bg-gradient-to-r from-shoreline-blue/20 to-transparent rounded-lg" />
 					</div>
-
 				</div>
 
 				<div className="section-divider" />
@@ -224,6 +221,7 @@ const About = () => {
 								</div>
 							</div>
 						</div>
+						
 						<div className="mt-8 h-64 rounded-xl overflow-hidden">
 							<iframe
 								src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d63371.80385596634!2d79.83789389349902!3d6.927079595149932!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae253d10f7a7003%3A0x320b2e4d32d3838d!2sColombo%2C%20Sri%20Lanka!5e0!3m2!1sen!2sus!4v1616418743741!5m2!1sen!2sus"
