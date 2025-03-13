@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
 
+from U_net_arciteuture import load_U_net_model, U_net_predict, U_net_save_segmented_image
+
 app = Flask(__name__)
 CORS(app)
 
@@ -15,7 +17,8 @@ app.config['RESULT_FOLDER'] = RESULT_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
-
+# Load the models 
+U_net_model = load_U_net_model()
 
 
 def allowed_file(filename):
@@ -38,6 +41,12 @@ def upload_file():
         file.save(file_path)
 
         result_paths = {}
+
+        outputs_unet = U_net_predict(file_path, U_net_model)
+        result_filename = f"U-Net_segmented_{file.filename}"
+        result_path = os.path.join(app.config['RESULT_FOLDER'], result_filename)
+        U_net_save_segmented_image(outputs_unet, result_path)
+        result_paths['U-Net'] = f"/result/{result_filename}"
 
         
         return jsonify({'message': 'File processed successfully', 'results': result_paths}), 200
