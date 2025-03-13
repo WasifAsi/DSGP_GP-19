@@ -4,6 +4,7 @@ import os
 
 from U_net_arciteuture import load_U_net_model, U_net_predict, U_net_save_segmented_image
 from deepLabV3_architecture import load_Deeplab_model , run
+from Segnet_architecture import  load_Segnet_model, run_segnet
 
 app = Flask(__name__)
 CORS(app)
@@ -21,6 +22,7 @@ os.makedirs(RESULT_FOLDER, exist_ok=True)
 # Load the models 
 U_net_model = load_U_net_model()
 DeepLab_model = load_Deeplab_model()
+Segnet_model = load_Segnet_model()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -55,6 +57,11 @@ def upload_file():
         deeplab_result_filename = f"deeplab_segmented_{file.filename}"
         deeplab_result_path = os.path.join(app.config['RESULT_FOLDER'], deeplab_result_filename)
         run(file_path, DeepLab_model, deeplab_result_path)
+
+        # Segnet Prediction and Saving
+        Segnet_result_filename = f"Segnet_segmented_{file.filename}"
+        Segnet_result_path = os.path.join(app.config['RESULT_FOLDER'], Segnet_result_filename)
+        run_segnet(file_path, Segnet_model, Segnet_result_path)
         
         return jsonify({'message': 'File processed successfully', 'results': result_paths}), 200
 
