@@ -18,16 +18,13 @@ const About = () => {
 					subtitle="Our interdisciplinary team brings together expertise from the Informatics Institute of Technology and Robert Gordon University to address critical coastal management challenges in Sri Lanka."
 				/>
 			
-
-				<div className="section-divider" />
-
-				<div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-					<div>
-						<h3 className="text-2xl font-medium text-shoreline-dark dark:text-white mb-4">
-								Why We Started
-						</h3>
-						<p className="text-shoreline-text dark:text-gray-300 mb-6">
-
+			<div className="section-divider" />
+			<div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-12 items-center"></div>
+			  <div>
+					<h3 className="text-2xl font-medium text-shoreline-dark dark:text-white mb-4">
+							Why We Started
+					</h3>
+					<p className="text-shoreline-text dark:text-gray-300 mb-6">
 							Our project began in response to the growing
 							challenges facing Sri Lanka's coastlines. With
 							rising sea levels and increasing coastal
@@ -48,9 +45,8 @@ const About = () => {
 							Try our analysis tools
 							<ArrowRight size={16} className="ml-2" />
 						</Link>
-					</div>
-
-					<div className="relative">
+						</div>
+						<div className="relative">
 						<img
 							src="\coastal-research.jpg"
 							alt="Coastal research in action"
@@ -59,52 +55,50 @@ const About = () => {
 						<div className="absolute inset-0 bg-gradient-to-r from-shoreline-blue/20 to-transparent rounded-lg" />
 					</div>
 
-				</div>
+				    <div className="section-divider" />
 
-				<div className="section-divider" />
-
-				<SectionHeading
+					<SectionHeading
 					eyebrow="Our Team"
 					title="Meet the Researchers"
 					subtitle="Our interdisciplinary team combines expertise in remote sensing, machine learning, environmental science, and coastal engineering."
-				/>
+				    />
 
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
-					<TeamMember
-						name="Wasif Asi"
-						title="Team Leader"
-						affiliation="Informatics Institute of Technology"
-						imageSrc="/user.jpeg"
-						description=""
-						delay={0}
-					/>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+						<TeamMember
+						   name="Wasif Asi"
+						   title="Team Leader"
+						   affiliation="Informatics Institute of Technology"
+						   imageSrc="/user.jpeg"
+						   description=""
+						   delay={0}
+						/>
 
-					<TeamMember
-						name="Kalhara Peiris"
-						title="Team Member"
-						affiliation="Informatics Institute of Technology"
-						imageSrc="/user.jpeg"
-						description=""
-						delay={1}
-					/>
+                        <TeamMember
+						    name="Kalhara Peiris"
+						    title="Team Member"
+						    affiliation="Informatics Institute of Technology"
+						    imageSrc="/user.jpeg"
+							description=""
+						    delay={1}
+					    />
 
-					<TeamMember
-						name="Ravisha De Alwis"
-						title="Team Member"
-						affiliation="Informatics Institute of Technology"
-						imageSrc="/user.jpeg"
-						description=""
-						delay={2}
-					/>
+                        <TeamMember
+						    name="Ravisha De Alwis"
+						    title="Team Member"
+						    affiliation="Informatics Institute of Technology"
+						    imageSrc="/user.jpeg"
+							description=""
+						    delay={2}
+					    />
 
-					<TeamMember
-						name="Praveen Sooriyapperuma"
-						title="Team Member"
-						affiliation="Informatics Institute of Technology"
-						imageSrc="/user.jpeg"
-						description=""
-						delay={3}
-					/>
+					    <TeamMember
+						    name="Praveen Sooriyapperuma"
+						    title="Team Member"
+						    affiliation="Informatics Institute of Technology"
+						    imageSrc="/user.jpeg"
+							description=""
+						    delay={3}
+					    />
 				</div>
 
 				<div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -135,7 +129,7 @@ const About = () => {
 								    Informatics Institute of Technology
 								</p>
 							</div>
-						</div>
+							</div>
 					</div>
 
 					<div className="bg-white dark:bg-shoreline-dark/30 p-6 rounded-xl shadow-md">
@@ -152,7 +146,7 @@ const About = () => {
 							<span>Visit Funding Partners</span>
 							<ExternalLink size={14} className="ml-1" />
 						</a>
-					</div>
+						</div>
 				</div>
 
 				<div className="section-divider" />
@@ -245,7 +239,6 @@ const About = () => {
 					</div>
 				</div>
 			</div>
-		</div>
 	);
 };
 export default About;
