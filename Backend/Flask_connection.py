@@ -52,16 +52,17 @@ def upload_file():
         U_net_save_segmented_image(outputs_unet, result_path)
         result_paths['U-Net'] = f"/result/{result_filename}"
         
-
         # DeepLabV3 Prediction and Saving
         deeplab_result_filename = f"deeplab_segmented_{file.filename}"
         deeplab_result_path = os.path.join(app.config['RESULT_FOLDER'], deeplab_result_filename)
         run(file_path, DeepLab_model, deeplab_result_path)
+        result_paths['DeepLabV3'] = f"/result/{deeplab_result_filename}"
 
         # Segnet Prediction and Saving
         Segnet_result_filename = f"Segnet_segmented_{file.filename}"
         Segnet_result_path = os.path.join(app.config['RESULT_FOLDER'], Segnet_result_filename)
         run_segnet(file_path, Segnet_model, Segnet_result_path)
+        result_paths['SegNet'] = f"/result/{Segnet_result_filename}"
         
         return jsonify({'message': 'File processed successfully', 'results': result_paths}), 200
 
