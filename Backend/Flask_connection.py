@@ -63,8 +63,31 @@ def upload_file():
         Segnet_result_path = os.path.join(app.config['RESULT_FOLDER'], Segnet_result_filename)
         run_segnet(file_path, Segnet_model, Segnet_result_path)
         result_paths['SegNet'] = f"/result/{Segnet_result_filename}"
-        
-        return jsonify({'message': 'File processed successfully', 'results': result_paths}), 200
+
+        U_net_Model_name = "U-net"
+        U_net_EPR = 0.2
+        U_net_NSM = 0.5
+
+        DeepLab_mode_Name = "Deeplab v3"
+        DeepLab_EPR = 0.1
+        DeepLab_NSM = 0.2
+
+        return jsonify({
+            'message': 'File processed successfully',
+            'results': result_paths,
+            'models': [
+                {
+                    'model_name': U_net_Model_name,
+                    'EPR': U_net_EPR,
+                    'NSM': U_net_NSM
+                },
+                {
+                    'model_name': DeepLab_mode_Name,
+                    'EPR': DeepLab_EPR,
+                    'NSM': DeepLab_NSM
+                }
+            ]
+        }), 200
 
     return jsonify({'error': 'Invalid file type'}), 400
 

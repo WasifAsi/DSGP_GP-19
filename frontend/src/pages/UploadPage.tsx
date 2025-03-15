@@ -8,12 +8,22 @@ import { ArrowRight, Layers, Activity, Map } from "lucide-react";
 const API_BASE_URL = "http://localhost:5000";
 
 const Upload = () => {
+    useEffect(() => {
+        // Scroll to top when component mounts
+        window.scrollTo(0, 0);
+    }, []);
+
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [analysisStep, setAnalysisStep] = useState(0);
     const [analysisComplete, setAnalysisComplete] = useState(false);
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
     const [showResults, setShowResults] = useState(false);
+    const [analysisResults, setAnalysisResults] = useState<Array<{
+        model_name: string;
+        EPR: number;
+        NSM: number;
+    }> | null>(null);
 
     const [analysisSteps, setAnalysisSteps] = useState([
         {
@@ -99,9 +109,30 @@ const Upload = () => {
                 // Parse the response
                 const data = await response.json();
                 console.log("Results:", data.results);
+
+                // Store analysis results from the backend
+                setAnalysisResults(data.models);
             } catch (apiError) {
-                // Just log API errors during development, but still proceed with the flow
                 console.log("API error (continuing for demo):", apiError);
+                
+                // Use standardized mock data for demos
+                setAnalysisResults([
+                    {
+                        model_name: "U-net",
+                        EPR: 0.2,
+                        NSM: 0.5
+                    },
+                    {
+                        model_name: "DeepLab v3",
+                        EPR: 0.1,
+                        NSM: 0.2
+                    },
+                    {
+                        model_name: "SegNet",
+                        EPR: 0.15,
+                        NSM: 0.3
+                    }
+                ]);
             }
 
             // Clear the simulated interval and set progress to 100%
@@ -250,7 +281,7 @@ const Upload = () => {
                                 ))}
                             </div>      
                             {/* Only show results when both complete and showResults are true */}
-                            {analysisComplete && showResults && (
+                            {analysisComplete && showResults && analysisResults && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -260,44 +291,78 @@ const Upload = () => {
                                     <h3 className="text-lg font-medium text-shoreline-dark dark:text-white mb-4">
                                         Analysis Results
                                     </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                        <div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
-                                            <div className="text-shoreline-blue font-medium mb-1">
-                                                Erosion Rate
-                                            </div>
-                                            <div className="text-2xl font-medium text-shoreline-dark dark:text-white">
-                                                -1.2 m/year
-                                            </div>
-                                        </div>
+                                    
+                                    {/* Model Comparison Table
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+                                            <thead className="bg-gray-50 dark:bg-gray-700">
+                                                <tr>
+                                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                        Model
+                                                    </th>
+                                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                        EPR (End Point Rate)
+                                                    </th>
+                                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                        NSM (Net Shoreline Movement)
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                                {analysisResults.map((model, index) => (
+                                                    <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50'}>
+                                                        <td className="py-4 px-4 text-sm font-medium text-shoreline-dark dark:text-white">
+                                                            {model.model_name}
+                                                        </td>
+                                                        <td className="py-4 px-4 text-sm text-shoreline-dark dark:text-white">
+                                                            {model.EPR} m/year
+                                                        </td>
+                                                        <td className="py-4 px-4 text-sm text-shoreline-dark dark:text-white">
+                                                            {model.NSM} m
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div> */}
 
-                                        <div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
-                                            <div className="text-shoreline-blue font-medium mb-1">
-                                                Area Affected
+                                    {/* Cards View */}
+                                    <div className="mt-8 space-y-6">
+                                        {analysisResults.map((model, index) => (
+                                            <div 
+                                                key={index} 
+                                                className="bg-white dark:bg-gray-800/30 rounded-lg shadow p-6 border-l-4 border-shoreline-blue"
+                                            >
+                                                <h4 className="text-lg font-medium text-shoreline-dark dark:text-white mb-4">
+                                                    {model.model_name}
+                                                </h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
+                                                        <div className="text-shoreline-blue font-medium mb-1">
+                                                            EPR (End Point Rate)
+                                                        </div>
+                                                        <div className="text-2xl font-medium text-shoreline-dark dark:text-white">
+                                                            {model.EPR} m/year
+                                                        </div>
+                                                        <div className="text-xs text-shoreline-text dark:text-gray-400 mt-2">
+                                                            The rate of shoreline change over time
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
+                                                        <div className="text-shoreline-blue font-medium mb-1">
+                                                            NSM (Net Shoreline Movement)
+                                                        </div>
+                                                        <div className="text-2xl font-medium text-shoreline-dark dark:text-white">
+                                                            {model.NSM} m
+                                                        </div>
+                                                        <div className="text-xs text-shoreline-text dark:text-gray-400 mt-2">
+                                                            Total movement of shoreline position
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="text-2xl font-medium text-shoreline-dark dark:text-white">
-                                                2.3 km²
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
-                                            <div className="text-shoreline-blue font-medium mb-1">
-                                                Confidence Level
-                                            </div>
-                                            <div className="text-2xl font-medium text-shoreline-dark dark:text-white">
-                                                92%
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col md:flex-row gap-4">
-                                        <button className="flex items-center justify-center px-6 py-3 bg-shoreline-blue text-white font-medium rounded-lg shadow-md hover:shadow-lg hover:shadow-shoreline-blue/20 transition-all duration-300">
-                                            <Layers size={18} className="mr-2" />
-                                            View Detailed Report
-                                        </button>
-                                        <button className="flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-700 text-shoreline-dark dark:text-white rounded-lg hover:border-shoreline-blue hover:text-shoreline-blue transition-all duration-300">
-                                            <Map size={18} className="mr-2" />
-                                            Open Visualization
-                                        </button>
+                                        ))}
                                     </div>
                                 </motion.div>
                             )}
