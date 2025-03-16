@@ -28,6 +28,12 @@ const Upload = () => {
 	const [clearUploadArea, setClearUploadArea] = useState<(() => void) | null>(
 		null
 	);
+	const [files, setFiles] = useState<File[]>([]);
+	const [error, setError] = useState<string | null>(null);
+
+	
+	const minFiles = 2;
+	const maxFiles = 5;
 
 	const [analysisSteps, setAnalysisSteps] = useState([
 		{
@@ -60,6 +66,7 @@ const Upload = () => {
 			return false;
 		}
 		// ...rest of validation
+		return true;
 	};
 
 	const handleUpload = async (files: File[]) => {

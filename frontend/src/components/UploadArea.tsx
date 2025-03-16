@@ -20,7 +20,7 @@ const UploadArea = ({
 	const [error, setError] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const allowedFileTypes = ["image/png", "image/jpeg", "image/tiff"];
+	const allowedFileTypes = ["image/jpg", "image/jpeg"];
 	const maxFileSizeMB = 10;
 	const minFiles = 2;
 	const maxFiles = 5;
@@ -57,7 +57,7 @@ const UploadArea = ({
 		for (const file of newFiles) {
 			if (!allowedFileTypes.includes(file.type)) {
 				setError(
-					`Invalid file type. Please upload PNG, JPEG, or TIFF files.`
+					`Invalid file type. Please upload JPG, JPEG files.`
 				);
 				return false;
 			}
@@ -168,7 +168,7 @@ const UploadArea = ({
 							</p>
 
 							<div className="flex space-x-4 mb-6">
-								<span className="file-type-badge">PNG</span>
+								<span className="file-type-badge">JPG</span>
 								<span className="file-type-badge">JPEG</span>
 
 								<span className="file-type-badge">
@@ -185,7 +185,7 @@ const UploadArea = ({
 							<input
 								ref={fileInputRef}
 								type="file"
-								accept=".png,.jpg,.jpeg,.tiff"
+								accept=".jpg,.jpeg,"
 								onChange={handleFileChange}
 								className="hidden"
 								multiple
