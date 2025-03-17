@@ -6,6 +6,8 @@ from U_net_arciteuture import load_U_net_model, U_net_predict, U_net_save_segmen
 from deepLabV3_architecture import load_Deeplab_model , run
 from Segnet_architecture import  load_Segnet_model, run_segnet
 
+from EPR_NSM_calculation import run_shoreline_analysis
+
 app = Flask(__name__)
 CORS(app)
 
@@ -64,6 +66,8 @@ def upload_file():
     # Process the images
     result_paths = {}
     unet_predictions = []
+    unet_path=[]
+
     deeplab_predictions = []
     segnet_predictions = []
     
@@ -77,6 +81,9 @@ def upload_file():
         unet_filename = f"U-Net_segmented_{i+1}_{image_name}"
         unet_result_path = os.path.join(app.config['RESULT_FOLDER'], unet_filename)
         U_net_save_segmented_image(outputs_unet, unet_result_path)
+
+        unet_path.append(unet_result_path)
+
         
         # Store the result path using a unique key for each image
         if 'U-Net' not in result_paths:
@@ -84,6 +91,8 @@ def upload_file():
         result_paths['U-Net'][f'image_{i+1}'] = f"/result/{unet_filename}"
         
         
+        
+
 
         
         # Process with DeepLab
@@ -121,6 +130,11 @@ def upload_file():
             result_paths['SegNet'] = {}
         result_paths['SegNet'][f'image_{i+1}'] = f"/result/{segnet_filename}"
     
+
+    
+    unet_epr, unet_nsm = run_shoreline_analysis(unet_path[0], unet_path[1])
+
+
     # Calculate shoreline changes between images
     # For now, we'll use mock data, but in a real application 
     # you would analyze the predictions to generate these values
@@ -168,8 +182,8 @@ def upload_file():
         'models': [
             {
                 'model_name': "U-net",
-                'EPR': -1.25,
-                'NSM': -15.5
+                'EPR': round(unet_epr, 2),
+                'NSM': round(unet_nsm)
             },
             {
                 'model_name': "DeepLab v3",

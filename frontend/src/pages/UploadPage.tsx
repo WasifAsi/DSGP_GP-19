@@ -434,7 +434,7 @@ const Upload = () => {
 																	Point Rate)
 																</div>
 																<div className="text-2xl font-medium text-shoreline-dark dark:text-white">
-																	{model.EPR}{" "}
+																	{model.EPR.toFixed(2)}{" "}
 																	m/year
 																</div>
 																<div className="text-xs text-shoreline-text dark:text-gray-400 mt-2">
