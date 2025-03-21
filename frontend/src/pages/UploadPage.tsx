@@ -114,62 +114,60 @@ const Upload = () => {
 
 			const uploadInterval = simulateUploadProgress();
 
-			// Actual API call (which may fail in development without backend)
-			try {
-				const response = await fetch(`${API_BASE_URL}/upload`, {
+			 // Step 1: Upload files to the backend storage only
+			 try {
+				const uploadResponse = await fetch(`${API_BASE_URL}/upload`, {
 					method: "POST",
 					body: formData,
 				});
-
-				if (!response.ok) {
-					throw new Error("Failed to upload file");
+	
+				if (!uploadResponse.ok) {
+					throw new Error("Failed to upload files");
 				}
-
-				// Parse the response
-				const data = await response.json();
-				console.log("Results:", data.results);
-
-				// Store analysis results from the backend
-				setAnalysisResults(data.models);
+	
+				// Parse the upload response that should contain file IDs or paths
+				const uploadData = await uploadResponse.json();
+				const uploadedFileIds = uploadData.fileIds; // Backend should return file IDs or paths
+				
+				// Clear the simulated interval and set progress to 100%
+				clearInterval(uploadInterval);
+				setUploadProgress(100);
+				
+				// Dismiss the loading toast
+				toast.dismiss(loadingToast);
+				toast.success("Files uploaded successfully! Starting analysis...");
+				
+				// Store the image URL but don't display it
+				setUploadedImage(URL.createObjectURL(files[0]));
+				
+				// Wait a short moment before starting analysis (better user experience)
+				setTimeout(() => {
+					// Start the analysis process with the uploaded file IDs
+					startAnalysis(uploadedFileIds);
+				}, 800);
+				
 			} catch (apiError) {
 				console.log("API error (continuing for demo):", apiError);
-
-				// Use standardized mock data for demos
-				setAnalysisResults([
-					{
-						model_name: "U-net",
-						EPR: 0.2,
-						NSM: 0.5,
-					},
-					{
-						model_name: "DeepLab v3",
-						EPR: 0.1,
-						NSM: 0.2,
-					},
-					{
-						model_name: "SegNet",
-						EPR: 0.15,
-						NSM: 0.3,
-					},
-				]);
+				
+				// Mock data for demo purposes
+				const mockFileIds = ['mock-file-1', 'mock-file-2'];
+				
+				// Clear the simulated interval and set progress to 100%
+				clearInterval(uploadInterval);
+				setUploadProgress(100);
+				
+				// Dismiss the loading toast
+				toast.dismiss(loadingToast);
+				toast.success("Files uploaded successfully! Starting analysis...");
+				
+				// Store the image URL but don't display it
+				setUploadedImage(URL.createObjectURL(files[0]));
+				
+				// Start the analysis process with mock file IDs
+				setTimeout(() => {
+					startAnalysis(mockFileIds);
+				}, 800);
 			}
-
-			// Clear the simulated interval and set progress to 100%
-			clearInterval(uploadInterval);
-			setUploadProgress(100);
-
-			// Dismiss the loading toast
-			toast.dismiss(loadingToast);
-			toast.success("File uploaded successfully! Starting analysis...");
-
-			// Store the image URL but don't display it
-			setUploadedImage(URL.createObjectURL(files[0]));
-
-			// Wait a short moment before starting analysis (better user experience)
-			setTimeout(() => {
-				// Start the analysis process
-				startAnalysis();
-			}, 800); // Short delay helps users see the "Starting analysis" toast
 		} catch (error) {
 			toast.error("Error uploading files: " + (error as Error).message);
 		} finally {
@@ -192,36 +190,90 @@ const Upload = () => {
 		toast.error("Analysis cancelled");
 	};
 
-	const startAnalysis = async () => {
-		setIsCancelled(false); // Reset cancelled state
+	const startAnalysis = async (fileIds: string[]) => {
+		setIsCancelled(false);
 		setAnalysisStep(1);
-
+	
 		try {
+			// Step 2: Now that files are uploaded, start the actual preprocessing and analysis
+			// Make a separate API call to preprocess the uploaded images
+			const preprocessResponse = await fetch(`${API_BASE_URL}/preprocess`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ fileIds }),
+			});
+	
+			if (!preprocessResponse.ok) {
+				throw new Error("Failed to process images");
+			}
+	
+			// This will trigger the backend preprocessing
+			
 			for (let i = 0; i < analysisSteps.length; i++) {
 				// Check if analysis was cancelled
 				if (isCancelled) {
 					return;
 				}
-
-				// Wait 10 seconds for the current step to process
+	
+				// Wait for the current step to process
 				await new Promise((resolve, reject) => {
 					const timeout = setTimeout(resolve, 10000);
-
+	
 					// Clear timeout if cancelled
 					if (isCancelled) {
 						clearTimeout(timeout);
 						reject(new Error("Analysis cancelled"));
 					}
 				});
-
+	
 				if (i < analysisSteps.length - 1) {
 					setAnalysisStep(i + 2);
 				} else {
+					// Get the final results
+					try {
+						const resultsResponse = await fetch(`${API_BASE_URL}/analysis-results`, {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+							},
+							body: JSON.stringify({ fileIds }),
+						});
+						
+						if (resultsResponse.ok) {
+							const data = await resultsResponse.json();
+							setAnalysisResults(data.models);
+						} else {
+							throw new Error("Failed to get analysis results");
+						}
+					} catch (resultsError) {
+						console.log("Results fetch error (using mock data):", resultsError);
+						
+						// Use mock data for demo
+						setAnalysisResults([
+							{
+								model_name: "U-net",
+								EPR: 0.2,
+								NSM: 0.5,
+							},
+							{
+								model_name: "DeepLab v3",
+								EPR: 0.1,
+								NSM: 0.2,
+							},
+							{
+								model_name: "SegNet",
+								EPR: 0.15,
+								NSM: 0.3,
+							},
+						]);
+					}
+					
 					setAnalysisComplete(true);
 					setShowResults(true);
 					toast.success("Analysis completed successfully!", {
-						description:
-							"Your shoreline analysis results are ready.",
+						description: "Your shoreline analysis results are ready.",
 					});
 				}
 			}
