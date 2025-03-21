@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import UploadArea from "../components/UploadArea";
 import { ArrowRight, Layers, Activity, Map, X } from "lucide-react";
+import axios from "axios";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -143,7 +144,7 @@ const Upload = () => {
 				// Wait a short moment before starting analysis (better user experience)
 				setTimeout(() => {
 					// Start the analysis process with the uploaded file IDs
-					startAnalysis(uploadedFileIds);
+					startPreprocessing(uploadedFileIds);
 				}, 800);
 				
 			} catch (apiError) {
@@ -165,7 +166,7 @@ const Upload = () => {
 				
 				// Start the analysis process with mock file IDs
 				setTimeout(() => {
-					startAnalysis(mockFileIds);
+					startPreprocessing(mockFileIds);
 				}, 800);
 			}
 		} catch (error) {
@@ -190,103 +191,49 @@ const Upload = () => {
 		toast.error("Analysis cancelled");
 	};
 
-	const startAnalysis = async (fileIds: string[]) => {
-		setIsCancelled(false);
-		setAnalysisStep(1);
-	
+	const startPreprocessing = async (fileIds: string[]) => {
+		setAnalysisStep(1); // Update UI to show "Preprocessing images"
+		
 		try {
-			// Step 2: Now that files are uploaded, start the actual preprocessing and analysis
-			// Make a separate API call to preprocess the uploaded images
-			const preprocessResponse = await fetch(`${API_BASE_URL}/preprocess`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ fileIds }),
-			});
-	
-			if (!preprocessResponse.ok) {
-				throw new Error("Failed to process images");
-			}
-	
-			// This will trigger the backend preprocessing
-			
-			for (let i = 0; i < analysisSteps.length; i++) {
-				// Check if analysis was cancelled
-				if (isCancelled) {
-					return;
-				}
-	
-				// Wait for the current step to process
-				await new Promise((resolve, reject) => {
-					const timeout = setTimeout(resolve, 10000);
-	
-					// Clear timeout if cancelled
-					if (isCancelled) {
-						clearTimeout(timeout);
-						reject(new Error("Analysis cancelled"));
-					}
-				});
-	
-				if (i < analysisSteps.length - 1) {
-					setAnalysisStep(i + 2);
-				} else {
-					// Get the final results
-					try {
-						const resultsResponse = await fetch(`${API_BASE_URL}/analysis-results`, {
-							method: "POST",
-							headers: {
-								"Content-Type": "application/json",
-							},
-							body: JSON.stringify({ fileIds }),
-						});
-						
-						if (resultsResponse.ok) {
-							const data = await resultsResponse.json();
-							setAnalysisResults(data.models);
-						} else {
-							throw new Error("Failed to get analysis results");
-						}
-					} catch (resultsError) {
-						console.log("Results fetch error (using mock data):", resultsError);
-						
-						// Use mock data for demo
-						setAnalysisResults([
-							{
-								model_name: "U-net",
-								EPR: 0.2,
-								NSM: 0.5,
-							},
-							{
-								model_name: "DeepLab v3",
-								EPR: 0.1,
-								NSM: 0.2,
-							},
-							{
-								model_name: "SegNet",
-								EPR: 0.15,
-								NSM: 0.3,
-							},
-						]);
-					}
-					
-					setAnalysisComplete(true);
-					setShowResults(true);
-					toast.success("Analysis completed successfully!", {
-						description: "Your shoreline analysis results are ready.",
-					});
-				}
-			}
+		  const response = await axios.post(`${API_BASE_URL}/preprocess`, { fileIds });
+		  // Move to step 2 when preprocessing is done
+		  startShorelineDetection(fileIds);
 		} catch (error) {
-			if (!isCancelled) {
-				// Only show error if not cancelled
-				toast.error(
-					"Error during analysis: " +
-						(error instanceof Error
-							? error.message
-							: "Unknown error")
-				);
-			}
+		  toast.error("Error during preprocessing");
+		}
+	};
+	
+	// Step 2: Shoreline Detection
+	const startShorelineDetection = async (fileIds: string[]) => {
+		setAnalysisStep(2); // Update UI to show "Detecting shoreline"
+		
+		try {
+		  const response = await axios.post(`${API_BASE_URL}/detect-shoreline`, { fileIds });
+		  // Move to step 3 when shoreline detection is done
+		  startMeasuringChanges(fileIds);
+		} catch (error) {
+		  toast.error("Error during shoreline detection");
+		}
+	};
+	
+	// Step 3: Measuring Changes
+	const startMeasuringChanges = async (fileIds: string[]) => {
+		setAnalysisStep(3); // Update UI to show "Measuring changes"
+		
+		try {
+		  const response = await axios.post(`${API_BASE_URL}/measure-changes`, { fileIds });
+		  // Set the results
+		  setAnalysisResults(response.data.models);
+		  setAnalysisStep(4); // Move to "Generating report"
+		  
+		  // Show results after a slight delay
+		  setTimeout(() => {
+			setAnalysisComplete(true);
+			setShowResults(true);
+		  }, 1000);
+		  
+		} catch (error) {
+		  toast.error("Error measuring shoreline changes");
 		}
 	};
 

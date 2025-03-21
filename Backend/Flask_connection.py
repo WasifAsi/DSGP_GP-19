@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
 import uuid
+import time
 
 from U_net_arciteuture import load_U_net_model, U_net_predict, U_net_save_segmented_image
 from deepLabV3_architecture import load_Deeplab_model, run
@@ -68,7 +69,8 @@ def upload_file():
     upload_id = str(uuid.uuid4())
     uploaded_files_cache[upload_id] = {
         'file_paths': file_paths,
-        'file_names': file_names
+        'file_names': file_names,
+        'state': 'uploaded'  # Track the processing state
     }
     
     # Return success with file ID
@@ -81,7 +83,7 @@ def upload_file():
 @app.route('/preprocess', methods=['POST'])
 def preprocess_images():
     """
-    This endpoint handles the preprocessing and model inference on previously uploaded images.
+    Step 1: Preprocessing only - this handles the initial preprocessing step
     """
     # Validate request
     data = request.json
@@ -96,6 +98,65 @@ def preprocess_images():
     
     # Get file information
     file_info = uploaded_files_cache[upload_id]
+    
+    # Check that we're in the right state to preprocess
+    if file_info.get('state') != 'uploaded':
+        return jsonify({'error': 'Files have already been preprocessed'}), 400
+    
+    file_paths = file_info['file_paths']
+    file_names = file_info['file_names']
+    
+    # Set up data structures for each processing phase
+    uploaded_files_cache[upload_id]['preprocessed_images'] = []
+    
+    # Step 1: Perform preprocessing - in a real system this would include 
+    # radiometric calibration and atmospheric correction
+    print("Starting preprocessing...")
+    
+    # Simulate preprocessing work (in a real system, you'd do actual preprocessing here)
+    for i, (image_path, image_name) in enumerate(zip(file_paths, file_names)):
+        # Add preprocessing code here
+        time.sleep(0.5)  # Simulate work
+        
+        # Store preprocessed image info
+        uploaded_files_cache[upload_id]['preprocessed_images'].append({
+            'original_path': image_path,
+            'original_name': image_name,
+            'index': i
+        })
+    
+    # Update state
+    uploaded_files_cache[upload_id]['state'] = 'preprocessed'
+    
+    return jsonify({
+        'message': 'Image preprocessing completed',
+        'fileId': upload_id,
+        'step': 1,
+        'next': '/detect-shoreline'
+    }), 200
+
+@app.route('/detect-shoreline', methods=['POST'])
+def detect_shoreline():
+    """
+    Step 2: Shoreline detection - applies the models to detect shorelines
+    """
+    # Validate request
+    data = request.json
+    if not data or 'fileIds' not in data or not data['fileIds']:
+        return jsonify({'error': 'No file IDs provided'}), 400
+    
+    upload_id = data['fileIds'][0]
+    
+    # Validate upload ID and state
+    if upload_id not in uploaded_files_cache:
+        return jsonify({'error': 'Invalid file ID or files have expired'}), 400
+    
+    file_info = uploaded_files_cache[upload_id]
+    if file_info.get('state') != 'preprocessed':
+        return jsonify({'error': 'Files must be preprocessed first'}), 400
+    
+    # Get preprocessed image info
+    preprocessed_images = file_info['preprocessed_images']
     file_paths = file_info['file_paths']
     file_names = file_info['file_names']
     
@@ -105,8 +166,13 @@ def preprocess_images():
     deeplab_paths = []
     segnet_paths = []
     
+    print("Detecting shorelines...")
+    
     # Process each image with each model
-    for i, (image_path, image_name) in enumerate(zip(file_paths, file_names)):
+    for i, image_info in enumerate(preprocessed_images):
+        image_path = image_info['original_path']
+        image_name = image_info['original_name']
+        
         # Process with U-Net
         outputs_unet = U_net_predict(image_path, U_net_model)
         unet_filename = f"U-Net_segmented_{i+1}_{image_name}"
@@ -137,15 +203,20 @@ def preprocess_images():
         'segnet_paths': segnet_paths
     }
     
+    # Update state
+    uploaded_files_cache[upload_id]['state'] = 'shorelines_detected'
+    
     return jsonify({
-        'message': 'Preprocessing completed successfully',
-        'fileId': upload_id
+        'message': 'Shoreline detection completed',
+        'fileId': upload_id,
+        'step': 2,
+        'next': '/measure-changes'
     }), 200
 
-@app.route('/analysis-results', methods=['POST'])
-def get_analysis_results():
+@app.route('/measure-changes', methods=['POST'])
+def measure_changes():
     """
-    This endpoint returns the final analysis results for a preprocessed set of images.
+    Step 3: Measuring changes - computes the EPR and NSM values
     """
     # Validate request
     data = request.json
@@ -154,14 +225,14 @@ def get_analysis_results():
     
     upload_id = data['fileIds'][0]
     
-    # Validate preprocessing was done
-    if upload_id not in uploaded_files_cache or 'processed' not in uploaded_files_cache[upload_id]:
-        return jsonify({'error': 'Invalid file ID or files have not been processed'}), 400
+    # Validate upload ID and state
+    if upload_id not in uploaded_files_cache:
+        return jsonify({'error': 'Invalid file ID or files have expired'}), 400
     
-    # Get file information
     file_info = uploaded_files_cache[upload_id]
-    file_paths = file_info['file_paths']
-    file_names = file_info['file_names']
+    if file_info.get('state') != 'shorelines_detected':
+        return jsonify({'error': 'Shorelines must be detected first'}), 400
+    
     processed_info = file_info['processed']
     
     # Get model paths
@@ -169,11 +240,14 @@ def get_analysis_results():
     deeplab_paths = processed_info['deeplab_paths']
     segnet_paths = processed_info['segnet_paths']
     
+    print("Measuring shoreline changes...")
+    
     # Calculate shore changes for all models with error handling
     models_data = []
     
     # Process U-Net results
     try:
+        print("Analyzing U-Net results...")
         unet_epr, unet_nsm = run_shoreline_analysis(unet_paths[0], unet_paths[1], "U-net")
         models_data.append({
             'model_name': "U-net",
@@ -190,6 +264,7 @@ def get_analysis_results():
     
     # Process DeepLab results
     try:
+        print("Analyzing DeepLab results...")
         deeplab_epr, deeplab_nsm = run_shoreline_analysis(deeplab_paths[0], deeplab_paths[1], "DeepLab v3")
         models_data.append({
             'model_name': "DeepLab v3",
@@ -206,6 +281,7 @@ def get_analysis_results():
     
     # Process SegNet results
     try:
+        print("Analyzing SegNet results...")
         segnet_epr, segnet_nsm = run_shoreline_analysis(segnet_paths[0], segnet_paths[1], "SegNet")
         models_data.append({
             'model_name': "SegNet",
@@ -220,11 +296,44 @@ def get_analysis_results():
             'NSM': -14.7
         })
     
+    # Update state and store results
+    uploaded_files_cache[upload_id]['state'] = 'completed'
+    uploaded_files_cache[upload_id]['analysis_results'] = models_data
+    
     # Return the results
     return jsonify({
-        'message': 'Analysis completed successfully',
+        'message': 'Shoreline change analysis completed',
         'results': processed_info['result_paths'],
-        'models': models_data
+        'models': models_data,
+        'step': 3
+    }), 200
+
+@app.route('/analysis-results', methods=['POST'])
+def get_analysis_results():
+    """
+    This endpoint returns the final combined results of all steps
+    """
+    # Validate request
+    data = request.json
+    if not data or 'fileIds' not in data or not data['fileIds']:
+        return jsonify({'error': 'No file IDs provided'}), 400
+    
+    upload_id = data['fileIds'][0]
+    
+    # Validate the upload exists and has completed processing
+    if upload_id not in uploaded_files_cache:
+        return jsonify({'error': 'Invalid file ID or files have expired'}), 400
+    
+    file_info = uploaded_files_cache[upload_id]
+    
+    if file_info.get('state') != 'completed':
+        return jsonify({'error': 'Analysis has not been completed'}), 400
+    
+    # Return the complete results
+    return jsonify({
+        'message': 'Analysis completed successfully',
+        'results': file_info['processed']['result_paths'],
+        'models': file_info['analysis_results']
     }), 200
 
 @app.route('/result/<filename>', methods=['GET'])
