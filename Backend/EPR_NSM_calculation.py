@@ -170,7 +170,7 @@ def calculate_shoreline_change(shoreline1_mask, shoreline2_mask, transects, pixe
     return np.array(nsm_values), np.array(epr_values), np.array(intersection_points1), np.array(intersection_points2), valid_transects
 
 # Modify this function to use a non-interactive backend 
-def visualize_shoreline_change(image1, image2, shoreline1, shoreline2, transects,
+def visualize_shoreline_change(image1, image2, model_name, shoreline1, shoreline2, transects,
                               intersection_points1, intersection_points2, nsm_values):
     """Visualize shoreline change analysis results"""
     import matplotlib
@@ -258,7 +258,7 @@ def visualize_shoreline_change(image1, image2, shoreline1, shoreline2, transects
     # Save the figure
     os.makedirs("analysis_results", exist_ok=True)
     plt.tight_layout()
-    plt.savefig(os.path.join("analysis_results", "shoreline_change.png"), dpi=300)
+    plt.savefig(os.path.join("analysis_results", f"{model_name}_shoreline_change.png"), dpi=300)
     plt.close(fig)  # Explicitly close the figure
 
     # Return statistics for further analysis
@@ -282,7 +282,7 @@ def visualize_shoreline_change(image1, image2, shoreline1, shoreline2, transects
     return stats
 
 # Main function to process satellite images and calculate NSM/EPR
-def analyze_shoreline_change(mask1, mask2, date1=None, date2=None,
+def analyze_shoreline_change(mask1, mask2, model_name, date1=None, date2=None,
                               pixel_to_meter=10.0, num_transects=50):
     """
     Analyze shoreline change between two preprocessed masks.
@@ -360,7 +360,7 @@ def analyze_shoreline_change(mask1, mask2, date1=None, date2=None,
     # Visualize results
     # print("Generating visualization")
     stats = visualize_shoreline_change(
-        mask1, mask2, shoreline1, shoreline2, valid_transects,
+        mask1, mask2,model_name, shoreline1, shoreline2, valid_transects,
         intersection_points1, intersection_points2,
         nsm_values
     )
@@ -452,9 +452,10 @@ def run_shoreline_analysis(image1_path, image2_path, model_name):
     try:
         stats = analyze_shoreline_change(
             image1, image2,
+            model_name,
             date1=date1, date2=date2,
             pixel_to_meter=pixel_to_meter,
-            num_transects=100
+            num_transects=100,
         )
         
         # Close all matplotlib figures to prevent memory leaks
