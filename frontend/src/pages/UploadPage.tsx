@@ -31,6 +31,7 @@ const Upload = () => {
 	);
 	const [files, setFiles] = useState<File[]>([]);
 	const [error, setError] = useState<string | null>(null);
+	const [errorIndex, setErrorIndex] = useState<number | null>(null);
 
 	
 	const minFiles = 2;
@@ -177,32 +178,91 @@ const Upload = () => {
 	};
 
 	const handleCancelAnalysis = () => {
-		setIsCancelled(true);
-		setAnalysisStep(0);
-		setAnalysisComplete(false);
-		setShowResults(false);
-		setUploadedImage(null);
-
-		// Execute the clearFiles function
-		if (clearUploadArea) {
-			clearUploadArea();
-		}
-
-		toast.error("Analysis cancelled");
-	};
+    // Reset all states
+    setIsCancelled(true);
+    setAnalysisStep(0);
+    setAnalysisComplete(false);
+    setShowResults(false);
+    setUploadedImage(null);
+    
+    // Execute the clearFiles function if available
+    if (clearUploadArea) {
+        clearUploadArea();
+    }
+    
+    // Add this line to refresh the page completely
+    window.location.reload();
+    
+    toast.error("Analysis cancelled");
+};
 
 	const startPreprocessing = async (fileIds: string[]) => {
-		setAnalysisStep(1); // Update UI to show "Preprocessing images"
+		setError(null);
+		setErrorIndex(null);
+		setAnalysisStep(0);
 		
 		try {
-		  const response = await axios.post(`${API_BASE_URL}/preprocess`, { fileIds });
-		  // Move to step 2 when preprocessing is done
-		  startShorelineDetection(fileIds);
-		} catch (error) {
-		  toast.error("Error during preprocessing");
+			const response = await fetch(`${API_BASE_URL}/preprocess`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ fileIds })
+			});
+			
+			const data = await response.json();
+			
+			if (!response.ok) {
+				console.error('Error in preprocessing:', data);
+				
+				if (data.invalidImage) {
+					setError(data.error);
+					
+					// Find index of problematic image
+					const errorImgIndex = files.findIndex(
+						file => file.name === data.invalidImage
+					);
+					
+					if (errorImgIndex !== -1) {
+						setErrorIndex(errorImgIndex);
+					}
+				} else {
+					setError(data.error || 'Failed to preprocess images');
+				}
+				
+				setIsCancelled(true);
+				return false;
+			}
+			
+			// Continue to next step
+			return await detectShoreline(fileIds);
+			
+		} catch (err) {
+			console.error('Error in startPreprocessing:', err);
+			setError('Network error: Could not connect to the preprocessing server');
+			setIsCancelled(true);
+			return false;
 		}
 	};
-	
+
+	// Function to highlight problematic images
+	const highlightProblemImage = (imageName: string) => {
+		// Find the problematic image in the files array
+		const problemIndex = files.findIndex(file => file.name === imageName);
+		
+		if (problemIndex >= 0) {
+		  // You could set some state to highlight this in your UI
+		  setErrorIndex(problemIndex);
+		  
+		  // Scroll to the problematic image
+		  const imageElement = document.getElementById(`image-${problemIndex}`);
+		  if (imageElement) {
+			imageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			imageElement.classList.add('error-highlight');
+		  }
+		}
+	};
+
 	// Step 2: Shoreline Detection
 	const startShorelineDetection = async (fileIds: string[]) => {
 		setAnalysisStep(2); // Update UI to show "Detecting shoreline"
@@ -237,6 +297,136 @@ const Upload = () => {
 		}
 	};
 
+	// Fix the measureShorelines function:
+const measureShorelines = async (fileIds: string[]) => {
+    setError(null);
+    setErrorIndex(null);
+    setAnalysisStep(2); // Set to step 2 (Measuring changes)
+    
+    try {
+        console.log("Starting measure-changes API call...");
+        const response = await fetch(`${API_BASE_URL}/measure-changes`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ fileIds })
+        });
+        
+        // Always parse the response, regardless of status
+        const data = await response.json();
+        console.log("Measure changes response:", data);
+        
+        // Check if response was not successful
+        if (!response.ok) {
+            console.error('Error in measure-changes:', data);
+            
+            // Set error message from the response
+            setError(data.error || 'An error occurred during shoreline analysis');
+            
+            // If there's an invalid image specified, set the error index
+            if (data.invalidImage) {
+                const errorIdx = files.findIndex(f => f.name === data.invalidImage);
+                if (errorIdx !== -1) {
+                    setErrorIndex(errorIdx);
+                }
+            }
+            
+            setIsCancelled(true);
+            return false;
+        }
+        
+        // Success - set results and update UI
+        console.log("Analysis successful:", data);
+        
+        // IMPORTANT CHANGE: Set the results from the correct property in the response
+        setAnalysisResults(data.models);
+        
+        // IMPORTANT: First update to step 3 (Generating report)
+        setAnalysisStep(3);
+        
+        // Add a longer delay for the "Generating report" step to be visible
+        return new Promise(resolve => {
+            setTimeout(() => {
+                setAnalysisComplete(true);
+                setShowResults(true);
+                resolve(true);
+            }, 3000); // Increase to 3 seconds to make the "Generating report" step clearly visible
+        });
+        
+    } catch (err) {
+        console.error('Network error in measureShorelines:', err);
+        setError('Network error: Could not connect to the analysis server');
+        setIsCancelled(true);
+        return false;
+    }
+};
+
+	// Update your detect shoreline function to call this one:
+	const detectShoreline = async (fileIds: string[]) => {
+		setError(null);
+		setErrorIndex(null);
+		setAnalysisStep(1);
+		
+		try {
+			const response = await fetch(`${API_BASE_URL}/detect-shoreline`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ fileIds })
+			});
+			
+			const data = await response.json();
+			
+			if (!response.ok) {
+				console.error('Error detecting shoreline:', data);
+				
+				if (data.invalidImage) {
+					setError(data.error);
+					
+					// Find index of problematic image
+					const errorImgIndex = files.findIndex(
+						file => file.name === data.invalidImage
+					);
+					
+					if (errorImgIndex !== -1) {
+						setErrorIndex(errorImgIndex);
+					}
+				} else {
+					setError(data.error || 'Failed to detect shoreline');
+				}
+				
+				setIsCancelled(true);
+				return false;
+			}
+			
+			// Now call measure shorelines
+			return await measureShorelines(fileIds);
+			
+		} catch (err) {
+			console.error('Error in detectShoreline:', err);
+			setError('Network error: Could not connect to the analysis server');
+			setIsCancelled(true);
+			return false;
+		}
+	};
+
+	// Add this debugging function to help track state
+const logCurrentState = () => {
+    console.log("Current state:", {
+        analysisStep,
+        analysisComplete,
+        showResults,
+        analysisResults
+    });
+};
+
+// Call this in useEffect to debug
+useEffect(() => {
+    logCurrentState();
+}, [analysisStep, analysisComplete, showResults, analysisResults]);
+
 	return (
 		<div className="pt-32 pb-24">
 			<div className="container mx-auto px-4">
@@ -251,7 +441,8 @@ const Upload = () => {
 						onUpload={handleUpload}
 						isUploading={isUploading}
 						uploadProgress={uploadProgress}
-						onClear={() => clearUploadArea && clearUploadArea()}
+						setClearCallback={(clearFn) => setClearUploadArea(() => clearFn)}
+						onClearAll={handleCancelAnalysis} // Add this prop to connect directly
 					/>
 				</div>
 
@@ -274,14 +465,14 @@ const Upload = () => {
 									>
 										<div
 											className={`w-8 h-8 rounded-full flex items-center justify-center mr-4 flex-shrink-0 ${
-												analysisStep > index
+												(index === 3 && analysisComplete) || analysisStep > index
 													? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
 													: analysisStep === index
 													? "bg-shoreline-light-blue text-shoreline-blue"
 													: "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
 											}`}
 										>
-											{analysisStep > index ? (
+											 {(index === 3 && analysisComplete) || analysisStep > index ? (
 												<svg
 													className="w-5 h-5"
 													fill="none"
@@ -304,40 +495,41 @@ const Upload = () => {
 											<div className="flex justify-between">
 												<h4
 													className={`font-medium ${
-														analysisStep >= index
+														(index === 3 && analysisComplete) || analysisStep >= index
 															? "text-shoreline-dark dark:text-white"
 															: "text-gray-400 dark:text-gray-500"
 													}`}
 												>
 													{step.name}
 												</h4>
-												{analysisStep === index &&
-													!analysisComplete && (
-														<div className="flex items-center animate-pulse text-shoreline-blue text-sm">
-															<div className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping mr-1"></div>
-															<div
-																className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping mr-1"
-																style={{
-																	animationDelay:
-																		"0.2s",
-																}}
-															></div>
-															<div
-																className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping"
-																style={{
-																	animationDelay:
-																		"0.4s",
-																}}
-															></div>
-															<span className="ml-2">
-																Processing...
-															</span>
-														</div>
-													)}
+												{analysisStep === index && 
+												  !(index === 3 && analysisComplete) && 
+												  !analysisComplete && (
+													<div className="flex items-center animate-pulse text-shoreline-blue text-sm">
+														<div className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping mr-1"></div>
+														<div
+															className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping mr-1"
+															style={{
+																animationDelay:
+																	"0.2s",
+															}}
+														></div>
+														<div
+															className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping"
+															style={{
+																animationDelay:
+																	"0.4s",
+															}}
+														></div>
+														<span className="ml-2">
+															Processing...
+														</span>
+													</div>
+												)}
 											</div>
 											<p
 												className={`text-sm ${
-													analysisStep >= index
+													(index === 3 && analysisComplete) || analysisStep >= index
 														? "text-shoreline-text dark:text-gray-300"
 														: "text-gray-400 dark:text-gray-500"
 												}`}
@@ -469,6 +661,74 @@ const Upload = () => {
 									</motion.div>
 								)}
 						</div>
+					</motion.div>
+				)}
+
+				{error && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+					>
+						<motion.div 
+							initial={{ scale: 0.9, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							transition={{ type: "spring", damping: 25, stiffness: 300 }}
+							className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-lg w-full mx-4"
+						>
+							<div className="flex items-center mb-4">
+								<div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center mr-3">
+									<X size={20} className="text-red-600 dark:text-red-400" />
+								</div>
+								<h3 className="text-xl font-medium text-red-600 dark:text-red-400">Analysis Error</h3>
+							</div>
+							
+							<p className="text-shoreline-dark dark:text-white mb-6">
+								{error}
+							</p>
+							
+							{errorIndex !== null && files[errorIndex] && (
+								<div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30">
+									<h4 className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">Problem with image:</h4>
+									<div className="flex items-center">
+										<div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden mr-3 flex-shrink-0">
+											<img 
+												src={URL.createObjectURL(files[errorIndex])} 
+												alt={files[errorIndex].name}
+												className="w-full h-full object-cover"
+											/>
+										</div>
+										<p className="text-sm text-shoreline-text dark:text-gray-300 overflow-hidden text-ellipsis">
+											{files[errorIndex].name}
+										</p>
+									</div>
+								</div>
+							)}
+							
+							<div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-6">
+								<h4 className="text-sm font-medium text-shoreline-dark dark:text-white mb-2">
+									How to fix this:
+								</h4>
+								<ul className="text-sm text-shoreline-text dark:text-gray-300 space-y-1 pl-5 list-disc">
+									<li>Upload images from the same coastal area</li>
+									<li>Make sure images show the same geographic location</li>
+									<li>The images should be from different time periods to measure changes</li>
+									<li>Verify that images have clear shorelines visible</li>
+								</ul>
+							</div>
+							
+							<div className="flex justify-end">
+								<button 
+									onClick={() => {
+										 // Force a complete page reload
+										 window.location.reload();
+										}}
+									className="px-5 py-2.5 bg-shoreline-blue hover:bg-shoreline-blue/90 text-white rounded-lg transition-colors duration-200 flex items-center"
+								>
+									Try Again
+								</button>
+							</div>
+						</motion.div>
 					</motion.div>
 				)}
 

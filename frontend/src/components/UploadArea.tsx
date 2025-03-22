@@ -7,6 +7,8 @@ interface UploadAreaProps {
   isUploading: boolean;
   uploadProgress: number;
   onClear?: () => void; // Add this new prop
+  setClearCallback?: (callback: () => void) => void; // Add this new prop
+  onClearAll?: () => void; // Add this new prop
 }
 
 const UploadArea = ({
@@ -14,6 +16,8 @@ const UploadArea = ({
   isUploading,
   uploadProgress,
   onClear,
+  setClearCallback,
+  onClearAll,
 }: UploadAreaProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]); // Changed to array
@@ -146,6 +150,13 @@ const UploadArea = ({
     }
   }, [onClear]);
 
+  // Set the callback in the parent when the component mounts
+  useEffect(() => {
+    if (setClearCallback) {
+      setClearCallback(clearFiles);
+    }
+  }, [setClearCallback]);
+
   return (
     <div className="w-full max-w-2xl mx-auto">
       <AnimatePresence mode="wait">
@@ -265,7 +276,7 @@ const UploadArea = ({
                 )}
 
                 <button
-                  onClick={clearFiles}
+                  onClick={onClearAll || clearFiles} // Use onClearAll if provided, otherwise just clear files
                   className="px-4 py-2 bg-red-100 text-red-600 hover:bg-red-200 
                           dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 
                           rounded-md transition-colors duration-200 flex items-center space-x-2"
