@@ -1,3 +1,10 @@
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+os.environ['TK_SILENCE_DEPRECATION'] = "1"
+
+import matplotlib
+matplotlib.use('Agg')  # Force non-interactive backend
+
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
@@ -7,7 +14,6 @@ from albumentations.pytorch import ToTensorV2
 from scipy.spatial.distance import cdist
 import pandas as pd
 from datetime import datetime
-import os
 
 
 
@@ -163,11 +169,16 @@ def calculate_shoreline_change(shoreline1_mask, shoreline2_mask, transects, pixe
 
     return np.array(nsm_values), np.array(epr_values), np.array(intersection_points1), np.array(intersection_points2), valid_transects
 
-# Visualize results with support for positive and negative values
+# Modify this function to use a non-interactive backend 
 def visualize_shoreline_change(image1, image2, shoreline1, shoreline2, transects,
                               intersection_points1, intersection_points2, nsm_values):
+    """Visualize shoreline change analysis results"""
+    import matplotlib
+    matplotlib.use('Agg')  # Force non-interactive backend
+    import matplotlib.pyplot as plt
+    
     # Create a figure for the combined visualization
-    plt.figure(figsize=(12, 10))
+    fig = plt.figure(figsize=(12, 10))
 
     # Create masks for visualization
     mask1 = np.zeros((image1.shape[0], image1.shape[1]), dtype=np.uint8)
@@ -245,27 +256,28 @@ def visualize_shoreline_change(image1, image2, shoreline1, shoreline2, transects
     plt.yticks([])
 
     # Save the figure
+    os.makedirs("analysis_results", exist_ok=True)
     plt.tight_layout()
-    plt.savefig("shoreline_change.png", dpi=300)
-    plt.close()
+    plt.savefig(os.path.join("analysis_results", "shoreline_change.png"), dpi=300)
+    plt.close(fig)  # Explicitly close the figure
 
     # Return statistics for further analysis
     stats = {
-        "avg_nsm": np.mean(nsm_values),
-        "max_nsm": np.max(nsm_values),
-        "min_nsm": np.min(nsm_values),
-        "std_nsm": np.std(nsm_values),
-        "accretion_percent": np.sum(nsm_values > 0) / len(nsm_values) * 100,
-        "erosion_percent": np.sum(nsm_values < 0) / len(nsm_values) * 100
+        "avg_nsm": np.mean(nsm_values) if len(nsm_values) > 0 else 0,
+        "max_nsm": np.max(nsm_values) if len(nsm_values) > 0 else 0,
+        "min_nsm": np.min(nsm_values) if len(nsm_values) > 0 else 0,
+        "std_nsm": np.std(nsm_values) if len(nsm_values) > 0 else 0,
+        "accretion_percent": np.sum(nsm_values > 0) / len(nsm_values) * 100 if len(nsm_values) > 0 else 0,
+        "erosion_percent": np.sum(nsm_values < 0) / len(nsm_values) * 100 if len(nsm_values) > 0 else 0
     }
 
     # Display statistics
-    print(f"Average NSM: {stats['avg_nsm']:.2f} meters")
-    print(f"Maximum accretion: {stats['max_nsm']:.2f} meters")
-    print(f"Maximum erosion: {abs(stats['min_nsm']):.2f} meters")
-    print(f"Standard Deviation: {stats['std_nsm']:.2f} meters")
-    print(f"Accretion percentage: {stats['accretion_percent']:.1f}%")
-    print(f"Erosion percentage: {stats['erosion_percent']:.1f}%")
+    # print(f"Average NSM: {stats['avg_nsm']:.2f} meters")
+    # print(f"Maximum accretion: {stats['max_nsm']:.2f} meters")
+    # print(f"Maximum erosion: {abs(stats['min_nsm']):.2f} meters")
+    # print(f"Standard Deviation: {stats['std_nsm']:.2f} meters")
+    # print(f"Accretion percentage: {stats['accretion_percent']:.1f}%")
+    # print(f"Erosion percentage: {stats['erosion_percent']:.1f}%")
 
     return stats
 
@@ -315,7 +327,7 @@ def analyze_shoreline_change(mask1, mask2, date1=None, date2=None,
     shoreline_points1 = np.argwhere(mask1 > 0)
     shoreline1 = order_shoreline_points(shoreline_points1)
 
-    print(f"Extracted shoreline 1 with {len(shoreline1)} points")
+    # print(f"Extracted shoreline 1 with {len(shoreline1)} points")
 
 
 
@@ -326,19 +338,19 @@ def analyze_shoreline_change(mask1, mask2, date1=None, date2=None,
     shoreline_points2 = np.argwhere(mask2 > 0)
     shoreline2 = order_shoreline_points(shoreline_points2)
 
-    print(f"Extracted shoreline 2 with {len(shoreline2)} points")
+    # print(f"Extracted shoreline 2 with {len(shoreline2)} points")
 
 
 
 
 
     # Use the first shoreline as baseline for transects
-    print(f"Generating {num_transects} transects")
+    # print(f"Generating {num_transects} transects")
     transects = generate_transects(shoreline1, num_transects=num_transects,
                                    transect_length=min(mask1.shape[0], mask1.shape[1]) / 2)
 
     # Calculate NSM and EPR
-    print("Calculating NSM and EPR")
+    # print("Calculating NSM and EPR")
     nsm_values, epr_values, intersection_points1, intersection_points2, valid_transects = calculate_shoreline_change(
         mask1, mask2, transects,
         pixel_to_meter=pixel_to_meter,
@@ -346,7 +358,7 @@ def analyze_shoreline_change(mask1, mask2, date1=None, date2=None,
     )
 
     # Visualize results
-    print("Generating visualization")
+    # print("Generating visualization")
     stats = visualize_shoreline_change(
         mask1, mask2, shoreline1, shoreline2, valid_transects,
         intersection_points1, intersection_points2,
@@ -368,8 +380,8 @@ def analyze_shoreline_change(mask1, mask2, date1=None, date2=None,
         # })
         # results_df.to_csv("shoreline_change_results.csv", index=False)
 
-        print(f"Average EPR: {stats['avg_epr']:.2f} meters/year")
-        print(f"Results saved to shoreline_change_results.csv")
+        # print(f"Average EPR: {stats['avg_epr']:.2f} meters/year")
+        # print(f"Results saved to shoreline_change_results.csv")
     else:
         print("WARNING: No valid transect intersections were found!")
         stats["avg_epr"] = 0
@@ -384,19 +396,35 @@ def analyze_shoreline_change(mask1, mask2, date1=None, date2=None,
 
 
 # Example usage
-def run_shoreline_analysis(image1, image2):
-    # Dates of the images (for EPR calculation)
-
-    if isinstance(image1, torch.Tensor):
-        image1 = image1.detach().cpu().numpy()
-    if isinstance(image2, torch.Tensor):
-        image2 = image2.detach().cpu().numpy()
+def run_shoreline_analysis(image1_path, image2_path, model_name):
+    """Run shoreline analysis between two segmented images
     
-    image1 = cv2.imread(image1, cv2.IMREAD_GRAYSCALE)
-    image2 = cv2.imread(image2, cv2.IMREAD_GRAYSCALE)
-
+    Args:
+        image1_path: Path to first segmented image
+        image2_path: Path to second segmented image
+        model_name: Name of the model used for segmentation
+        
+    Returns:
+        tuple: (EPR, NSM) values
+    """
+    # Import matplotlib with non-interactive backend to avoid tkinter issues
+    import matplotlib
+    matplotlib.use('Agg')  # Force non-interactive backend
+    import matplotlib.pyplot as plt
+    
+    # Dates of the images (for EPR calculation)
     date1 = "2023-10-14"
     date2 = "2023-11-18"
+    
+    # Read images
+    print(f"Reading segmented images from {model_name}")
+    image1 = cv2.imread(image1_path, cv2.IMREAD_GRAYSCALE)
+    image2 = cv2.imread(image2_path, cv2.IMREAD_GRAYSCALE)
+    
+    if image1 is None:
+        raise ValueError(f"Could not read image at {image1_path}")
+    if image2 is None:
+        raise ValueError(f"Could not read image at {image2_path}")
 
     original_width, original_height = 1156, 1722  # Original image dimensions
     resized_size = 540  # Resized dimension
@@ -410,30 +438,40 @@ def run_shoreline_analysis(image1, image2):
     original_resolution = 10000 / max(original_width, original_height)  # meters per pixel in original
     pixel_to_meter = original_resolution * (max(original_width, original_height) / resized_size)
 
-    print(f"Original resolution: {original_resolution:.2f} m/pixel")
-    print(f"After resizing: {pixel_to_meter:.2f} m/pixel")
+    # print(f"Original resolution: {original_resolution:.2f} m/pixel")
+    # print(f"After resizing: {pixel_to_meter:.2f} m/pixel")
 
-    # Run the analysis
-    stats= analyze_shoreline_change(
-        image1, image2,
-        date1=date1, date2=date2,
-        pixel_to_meter=pixel_to_meter,
-        num_transects=100
-    )
-
-    # Display the top of the results dataframe
-    # print("\nDetailed transect measurements:")
-    # print(results_df.head())
+    # Create results directory if it doesn't exist
+    os.makedirs("analysis_results", exist_ok=True)
     
-    # Return the average EPR and NSM values to be used by the Flask application
-    return stats["avg_epr"], stats["avg_nsm"]
+    # Set the output filename based on model name
+    plt.rcParams['figure.max_open_warning'] = 0  # Suppress max figure warning
+    output_image = os.path.join("analysis_results", f"{model_name}_change_analysis.png")
+    
+    # Run the analysis
+    try:
+        stats = analyze_shoreline_change(
+            image1, image2,
+            date1=date1, date2=date2,
+            pixel_to_meter=pixel_to_meter,
+            num_transects=100
+        )
+        
+        # Close all matplotlib figures to prevent memory leaks
+        plt.close('all')
+        
+        # Return the average EPR and NSM values to be used by the Flask application
+        return stats["avg_epr"], stats["avg_nsm"]
+    except Exception as e:
+        # Close all matplotlib figures on error too
+        plt.close('all')
+        raise e
 
 if __name__ == "__main__":
 
     image1 = "DeepLab_segmented_1_sentinel2_void_2023-10-14_Weligama.jpg"
     image2 = "DeepLab_segmented_2_sentinel2_void_2023-11-18_Weligama.jpg"
 
-    unet_epr, unet_nsm = run_shoreline_analysis(image1, image2)
+    unet_epr, unet_nsm = run_shoreline_analysis(image1, image2, "U-Net")
     print(f"U-Net EPR: {unet_epr:.2f} m/year")
     print(f"U-Net NSM: {unet_nsm:.2f} m")
-    
