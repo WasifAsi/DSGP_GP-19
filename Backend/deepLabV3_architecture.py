@@ -176,6 +176,7 @@ class DeepLabV3Plus(nn.Module):
         return x
 
 def get_preprocessing_transform(image_size=540):
+    
     """Create preprocessing transform for images"""
     return A.Compose([
         A.Resize(image_size, image_size),
@@ -187,51 +188,34 @@ def get_preprocessing_transform(image_size=540):
     ])
 
 
-def predict_single_image(model, image_path, device, image_size=540, threshold=0.5):
+def preprocesss_deeplabv3(image_path, device,  threshold=0.5):
     """Make prediction for a single image"""
     # Load the image
     image = cv2.imread(image_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    
-    # Get transform
-    transform = get_preprocessing_transform(image_size)
-    
-    # Apply transforms
-    transformed = transform(image=image)
-    input_tensor = transformed['image'].unsqueeze(0).to(device)
-    
-    # Get prediction
-    model.eval()
-    with torch.no_grad():
-        output = model(input_tensor)
-    
-    # Process prediction
-    prediction = (torch.sigmoid(output) > threshold).float()
-    prediction = prediction.cpu().numpy().squeeze()
-    
-    
-    return image, prediction
 
-def predict_batch(model, image_paths, device, image_size=540, threshold=0.3):
-    """Make predictions for multiple images"""
-    model.eval()
-    transform = get_preprocessing_transform(image_size)
-    results = []
+    return image
+
+# def predict_batch(model, image_paths, device, image_size=540, threshold=0.3):
+#     """Make predictions for multiple images"""
+#     model.eval()
+#     transform = get_preprocessing_transform(image_size)
+#     results = []
     
-    for img_path in image_paths:
-        image = cv2.imread(img_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+#     for img_path in image_paths:
+#         image = cv2.imread(img_path)
+#         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
-        transformed = transform(image=image)
-        input_tensor = transformed['image'].unsqueeze(0).to(device)
+#         transformed = transform(image=image)
+#         input_tensor = transformed['image'].unsqueeze(0).to(device)
         
-        with torch.no_grad():
-            output = model(input_tensor)
+#         with torch.no_grad():
+#             output = model(input_tensor)
         
-        prediction = (torch.sigmoid(output) > threshold).float()
-        prediction = prediction.cpu().numpy().squeeze()
+#         prediction = (torch.sigmoid(output) > threshold).float()
+#         prediction = prediction.cpu().numpy().squeeze()
     
-    return results
+#     return results
 
 
 def load_Deeplab_model():
@@ -250,18 +234,31 @@ def load_Deeplab_model():
     except Exception as e:
         print(f"Error loading the model: {e}")
 
-    return model
+    return model,device
 
-def run(image_path, model, output_path=None):
+def run_deeplabv3(image, model, output_path=None,image_size=540, threshold=0.5):
+
+     # Get transform
+    transform = get_preprocessing_transform(image_size)
+    
+    # Apply transforms
+    transformed = transform(image=image)
+    input_tensor = transformed['image'].unsqueeze(0).to(device)
+    
     # Make prediction
-    image, prediction = predict_single_image(model, image_path, device)
+    model.eval()
+    with torch.no_grad():
+        output = model(input_tensor)
+    
+    # Process prediction
+    prediction = (torch.sigmoid(output) > threshold).float()
 
     # Save the prediction if an output path is provided
     if output_path:
         save_deeplab_segmented_image(prediction, output_path)
 
     print("Prediction completed and visualized")
-    return prediction
+    
 
 
 def save_deeplab_segmented_image(prediction, output_path):
@@ -272,10 +269,16 @@ def save_deeplab_segmented_image(prediction, output_path):
         prediction (np.array): The predicted image as a NumPy array (binary mask).
         output_path (str): The path where the segmented image should be saved.
     """
+
+    prediction = prediction.cpu().numpy().squeeze()
+
     # Ensure the prediction is in the correct format for saving (uint8)
     prediction_img = (prediction * 255).astype(np.uint8)
 
     # Save the prediction image
-    cv2.imwrite(output_path, prediction_img)
+    # cv2.imwrite(output_path, prediction_img)
+
+    Image.fromarray(prediction_img).convert("L").save(output_path, format="PNG")
+
     print(f"Deeplab segmented image saved to: {output_path}")
 

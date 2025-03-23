@@ -22,23 +22,25 @@ def preprocess_image(image, target_size=(540, 540)):
 
     return image_batch
 
+
 # Function to load images and preprocess
-def load_and_preprocess_image(image_path, target_size=(540, 540)):
+def load_and_preprocess_image(image_path):
     # Read the image from file
     image = cv2.imread(image_path)
 
     # If image is read properly, preprocess it
     if image is not None:
-        return preprocess_image(image, target_size)
+        return preprocess_image(image)
     else:
         raise ValueError(f"Error: Could not load image from {image_path}")
     
-def run_segnet(image_path, model, output_path=None):
+    
+def run_segnet(preprocessed_image, model, output_path=None):
     # Paths
-    image = load_and_preprocess_image(image_path)
+    
 
     # Prediction
-    prediction = model.predict(image)
+    prediction = model.predict(preprocessed_image)
 
     # Remove the batch dimension and get the predicted mask
     predicted_mask = prediction.squeeze()  # This will remove the (1, height, width, channels) dimension

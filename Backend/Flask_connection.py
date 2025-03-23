@@ -14,10 +14,10 @@ import cv2
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
 
-from U_net_arciteuture import load_U_net_model, U_net_predict, U_net_save_segmented_image
-from deepLabV3_architecture import load_Deeplab_model, run
-from Segnet_architecture import load_Segnet_model, run_segnet
-from FCN8_arciteuture import load_FCN8_model, run_FCN8
+from U_net_arciteuture import load_U_net_model, U_net_preprocess_image, U_net_predict, U_net_save_segmented_image
+from deepLabV3_architecture import load_Deeplab_model,preprocesss_deeplabv3, run_deeplabv3
+from Segnet_architecture import load_Segnet_model,load_and_preprocess_image, run_segnet
+from FCN8_arciteuture import load_FCN8_model, preprocess_image, run_FCN8
 
 # Import shoreline validation
 from shoreline_validator import load_shoreline_models, is_shoreline
@@ -38,7 +38,7 @@ os.makedirs(app.config['RESULT_FOLDER'], exist_ok=True)
 
 # Load models
 U_net_model = load_U_net_model()
-DeepLab_model = load_Deeplab_model()
+DeepLab_model, deeplab_device = load_Deeplab_model()
 Segnet_model = load_Segnet_model()
 FCN8_model = load_FCN8_model()
 
@@ -146,6 +146,8 @@ def upload_files():
         'fileIds': [session_id],
         'count': len(files)
     }), 200
+
+
 
 @app.route('/validate-shoreline', methods=['POST'])
 def validate_shoreline():
@@ -266,11 +268,35 @@ def preprocess_images():
                         'invalidImage': image_name
                     }), 400
         
-        uploaded_files_cache[upload_id]['preprocessed_images'].append({
-            'original_path': image_path,
-            'original_name': image_name,
-            'index': i
-        })
+        # Process with each model's preprocessing function
+        try:
+            # Preprocess for U-Net
+            unet_processed = U_net_preprocess_image(image_path)
+            
+            # Preprocess for DeepLabV3
+            deeplab_processed = preprocesss_deeplabv3(image_path, deeplab_device)
+            
+            # Preprocess for SegNet
+            segnet_processed = load_and_preprocess_image(image_path)
+            
+            # Preprocess for FCN8
+            fcn8_processed = preprocess_image(image_path)
+            
+            # Store all the preprocessed images
+            uploaded_files_cache[upload_id]['preprocessed_images'].append({
+                'original_path': image_path,
+                'original_name': image_name,
+                'index': i,
+                'unet_processed': unet_processed,
+                'deeplab_processed': deeplab_processed,
+                'segnet_processed': segnet_processed,
+                'fcn8_processed': fcn8_processed
+            })
+        except Exception as e:
+            return jsonify({
+                'error': f'Failed to preprocess image {image_name}: {str(e)}',
+                'invalidImage': image_name
+            }), 500
     
     uploaded_files_cache[upload_id]['state'] = 'preprocessed'
     
@@ -312,7 +338,14 @@ def create_masks():
         image_name = image_info['original_name']
         
         try:
-            outputs_unet = U_net_predict(image_path, U_net_model)
+            # Use the preprocessed images directly from the cache
+            unet_processed = image_info['unet_processed']
+            deeplab_processed = image_info['deeplab_processed']
+            segnet_processed = image_info['segnet_processed'] 
+            fcn8_processed = image_info['fcn8_processed']
+            
+            # U-Net prediction
+            outputs_unet = U_net_predict(unet_processed, U_net_model)
             
             if outputs_unet.sum() < 100:
                 return jsonify({
@@ -326,21 +359,24 @@ def create_masks():
             unet_paths.append(unet_result_path)
             result_paths['U-Net'][f'image_{i+1}'] = f"/result/{unet_filename}"
             
+            # DeepLab prediction
             deeplab_filename = f"DeepLab_segmented_{i+1}_{image_name}"
             deeplab_result_path = os.path.join(app.config['RESULT_FOLDER'], deeplab_filename)
-            run(image_path, DeepLab_model, deeplab_result_path)
+            run_deeplabv3(deeplab_processed, DeepLab_model, deeplab_result_path)
             deeplab_paths.append(deeplab_result_path)
             result_paths['DeepLab'][f'image_{i+1}'] = f"/result/{deeplab_filename}"
             
+            # SegNet prediction
             segnet_filename = f"SegNet_segmented_{i+1}_{image_name}"
             segnet_result_path = os.path.join(app.config['RESULT_FOLDER'], segnet_filename)
-            run_segnet(image_path, Segnet_model, segnet_result_path)
+            run_segnet(segnet_processed, Segnet_model, segnet_result_path)
             segnet_paths.append(segnet_result_path)
             result_paths['SegNet'][f'image_{i+1}'] = f"/result/{segnet_filename}"
             
+            # FCN8 prediction
             fcn8_filename = f"FCN8_segmented_{i+1}_{image_name}"
             fcn8_result_path = os.path.join(app.config['RESULT_FOLDER'], fcn8_filename)
-            run_FCN8(image_path, FCN8_model, fcn8_result_path)
+            run_FCN8(fcn8_processed, FCN8_model, fcn8_result_path)
             fcn8_paths.append(fcn8_result_path)
             result_paths['FCN8'][f'image_{i+1}'] = f"/result/{fcn8_filename}"
             
@@ -435,7 +471,17 @@ def measure_changes():
         return jsonify({'error': 'Shorelines must be detected first'}), 400
     
     processed_info = file_info['processed']
+    file_paths = file_info['file_paths']  # Original uploaded image paths
     file_names = file_info['file_names']
+    
+    # Get the original satellite images
+    original_img1 = cv2.imread(file_paths[0])
+    original_img2 = cv2.imread(file_paths[1])
+    
+    if original_img1 is None or original_img2 is None:
+        return jsonify({
+            'error': 'Could not load original satellite images'
+        }), 500
     
     unet_paths = processed_info['unet_paths']
     deeplab_paths = processed_info['deeplab_paths']
@@ -455,41 +501,45 @@ def measure_changes():
     models_data = []
     
     try:
-        unet_epr, unet_nsm = run_shoreline_analysis(unet_paths[0], unet_paths[1], "U-net")
+        # Pass the original satellite images to the analysis function along with mask paths
+        stats_unet = run_shoreline_analysis(unet_paths[0], unet_paths[1], original_img1, original_img2, "U-net")
         models_data.append({
             'model_name': "U-net",
-            'EPR': round(unet_epr, 2),
-            'NSM': round(unet_nsm)
+            'EPR': round(stats_unet["avg_epr"], 2),
+            'NSM': round(stats_unet["avg_nsm"])
         })
         
         try:
-            deeplab_epr, deeplab_nsm = run_shoreline_analysis(deeplab_paths[0], deeplab_paths[1], "DeepLab v3")
+            stats_deeplab = run_shoreline_analysis(deeplab_paths[0], deeplab_paths[1], original_img1, original_img2, "DeepLab v3")
             models_data.append({
                 'model_name': "DeepLab v3",
-                'EPR': round(deeplab_epr, 2),
-                'NSM': round(deeplab_nsm)
+                'EPR': round(stats_deeplab["avg_epr"], 2),
+                'NSM': round(stats_deeplab["avg_nsm"])
             })
         except Exception as e:
+            print(f"DeepLab analysis failed: {str(e)}")
             models_data.append(get_fallback_data("DeepLab v3"))
         
         try:
-            segnet_epr, segnet_nsm = run_shoreline_analysis(segnet_paths[0], segnet_paths[1], "SegNet")
+            stats_segnet = run_shoreline_analysis(segnet_paths[0], segnet_paths[1], original_img1, original_img2, "SegNet")
             models_data.append({
                 'model_name': "SegNet",
-                'EPR': round(segnet_epr, 2),
-                'NSM': round(segnet_nsm)
+                'EPR': round(stats_segnet["avg_epr"], 2),
+                'NSM': round(stats_segnet["avg_nsm"])
             })
         except Exception as e:
+            print(f"SegNet analysis failed: {str(e)}")
             models_data.append(get_fallback_data("SegNet"))
             
         try:
-            fcn8_epr, fcn8_nsm = run_shoreline_analysis(fcn8_paths[0], fcn8_paths[1], "FCN8")
+            stats_fcn8 = run_shoreline_analysis(fcn8_paths[0], fcn8_paths[1], original_img1, original_img2, "FCN8")
             models_data.append({
                 'model_name': "FCN8",
-                'EPR': round(fcn8_epr, 2),
-                'NSM': round(fcn8_nsm)
+                'EPR': round(stats_fcn8["avg_epr"], 2),
+                'NSM': round(stats_fcn8["avg_nsm"])
             })
         except Exception as e:
+            print(f"FCN8 analysis failed: {str(e)}")
             models_data.append(get_fallback_data("FCN8"))
         
     except Exception as e:
@@ -521,14 +571,6 @@ def api_info():
         'message': 'Shoreline Analysis API is running'
     }), 200
 
-@app.route('/test-connection', methods=['GET', 'POST'])
-def test_connection():
-    """Simple endpoint to test if the API is reachable"""
-    return jsonify({
-        'status': 'success',
-        'message': 'Connection to backend established successfully',
-        'method': request.method
-    }), 200
 
 def get_fallback_data(model_name):
     """Provide fallback data if a model analysis fails"""

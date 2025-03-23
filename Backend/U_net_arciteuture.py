@@ -96,7 +96,7 @@ def load_U_net_model():
 
     return model
 
-# Crop to square function using OpenCV
+# Crop to square function 
 def crop_to_square(image):
     height, width = image.shape[:2]  # Get image dimensions
     min_dim = min(height, width)  # Find the shortest side
@@ -120,12 +120,13 @@ def U_net_preprocess_image(image_path):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = crop_to_square(img)  # Assuming crop_to_square is defined elsewhere
     img = cv2.resize(img, (512, 512))
-    return transform(np.array(img))  # Apply transformations and return
+    return img 
 
 
 
-def U_net_predict(image_path, model):
-    image_tensor = U_net_preprocess_image(image_path)
+def U_net_predict(img, model):
+
+    image_tensor= transform(np.array(img)) 
     if image_tensor is None:
         return {}
 
@@ -136,15 +137,34 @@ def U_net_predict(image_path, model):
     return output
 
 
+
+
 def U_net_save_segmented_image(output, save_path):
- 
+    # Squeeze the output tensor and convert to numpy array
     output = output.squeeze().cpu().detach().numpy()
-    output = output[1] if output.shape[0] == 2 else output  # Select positive class if 2 channels
-    output = (output > 0.5).astype(np.uint8) * 255  # Convert to binary mask
+    # Select the positive class if there are two channels
+    output = output[1] if output.shape[0] == 2 else output
+    # Convert to binary mask (0 or 255)
+    output = (output > 0.5).astype(np.uint8) * 255
 
+    # Ensure the output is 2D (in case of any multi-dimensional output)
     if len(output.shape) != 2:
-        output = output.reshape(output.shape[1], output.shape[2])  # Ensure 2D output
+        output = output.reshape(output.shape[1], output.shape[2])
 
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)  # Create directory if it doesn't exist
-    Image.fromarray(output).convert("L").save(save_path)  # Save as grayscale image
+    # Create the directory if it doesn't exist
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    
+    # Save the image as a PNG (PIL automatically handles the format based on the extension)
+    Image.fromarray(output).convert("L").save(save_path, format="PNG")  # Save as PNG
 
+
+if __name__ == "__main__":
+    # Load the model
+    U_net_model = load_U_net_model()
+    # Load the image
+    image_path = "sentinel2_void_2023-11-23_ArugamBay.jpg"
+    output = U_net_predict(image_path, U_net_model)
+    # Save the segmented image
+    save_path = "Result/4_segmented.png"
+    U_net_save_segmented_image(output, save_path)
+    print(f"Segmented image saved at: {save_path}")

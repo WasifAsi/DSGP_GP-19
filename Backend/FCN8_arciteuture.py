@@ -17,14 +17,7 @@ def preprocess_image(image_path, target_size=(512, 512)):
     img = np.expand_dims(img, axis=0)  # Add batch dimension
     return img
 
-def predict_mask(image_path, model):
-    """Generate segmentation mask from input image."""
-    img = preprocess_image(image_path)
-    pred_mask = model.predict(img)[0, :, :, 0]  # Get single channel prediction
-    pred_mask = (pred_mask > 0.5).astype(np.uint8) * 255  # Thresholding & scale to 255
-    return pred_mask
-
-def run_FCN8(image_path, model, output_path=None):
+def run_FCN8(image, model, output_path=None):
     """
     Run FCN8 segmentation model on an input image.
     
@@ -36,8 +29,10 @@ def run_FCN8(image_path, model, output_path=None):
     Returns:
         numpy.ndarray: The predicted mask
     """
-    # Generate prediction
-    prediction = predict_mask(image_path, model)
+
+    pred_mask = model.predict(image)[0, :, :, 0]  # Get single channel prediction
+    prediction = (pred_mask > 0.5).astype(np.uint8) * 255  # Thresholding & scale to 255
+
 
     # Remove the batch dimension and get the predicted mask
     predicted_mask = prediction.squeeze()  # This will remove extra dimensions if any
