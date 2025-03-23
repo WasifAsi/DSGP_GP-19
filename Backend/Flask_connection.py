@@ -6,11 +6,9 @@ os.environ['TK_SILENCE_DEPRECATION'] = "1"
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 
-# Now import your remaining libraries
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-import uuid
 import time
 import cv2
 import numpy as np
@@ -27,7 +25,6 @@ from shoreline_validator import load_shoreline_models, is_shoreline
 from EPR_NSM_calculation import run_shoreline_analysis
 
 app = Flask(__name__)
-# Update CORS configuration to ensure it properly accepts all requests
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg'}
@@ -39,6 +36,7 @@ app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max upload size
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['RESULT_FOLDER'], exist_ok=True)
 
+# Load models
 U_net_model = load_U_net_model()
 DeepLab_model = load_Deeplab_model()
 Segnet_model = load_Segnet_model()
@@ -63,9 +61,7 @@ def compare_segmentations(image1_path, image2_path):
     Compare two segmented images to check if they are from the same area
     Returns True if segmentations are similar enough
     """
-    if not os.path.exists(image1_path):
-        return False
-    if not os.path.exists(image2_path):
+    if not os.path.exists(image1_path) or not os.path.exists(image2_path):
         return False
     
     img1 = cv2.imread(image1_path, cv2.IMREAD_GRAYSCALE)
@@ -88,6 +84,8 @@ def compare_segmentations(image1_path, image2_path):
     
     # Use a threshold of 0.98 for SSIM score
     is_similar = score > 0.98
+
+    print(f"SSIM: {score}, IoU: {iou}, Similar: {is_similar}")
     
     return is_similar
 
@@ -110,20 +108,12 @@ def upload_files():
     file_paths = []
     file_names = []
     
-    # Create uploads directory if it doesn't exist
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    
     # Keep track of filenames to avoid duplicates
     used_filenames = set()
     
     for i, file in enumerate(files):
-        # Get the original filename and secure it
         original_filename = secure_filename(file.filename)
-        
-        # Create a numbered prefix for each file (1_, 2_, etc.)
         prefix = f"{i+1}_"
-        
-        # Handle potential duplicates by adding a suffix if needed
         base_name, extension = os.path.splitext(original_filename)
         final_filename = prefix + original_filename
         
@@ -134,12 +124,11 @@ def upload_files():
             
         used_filenames.add(final_filename)
         
-        # Save the file with the final filename
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], final_filename)
         
         try:
             file.save(file_path)
-            file_names.append(original_filename)  # Store original name for display
+            file_names.append(original_filename)
             file_paths.append(file_path)
         except Exception as e:
             return jsonify({'error': f'Error saving file {original_filename}: {str(e)}'}), 500
@@ -158,10 +147,10 @@ def upload_files():
         'count': len(files)
     }), 200
 
-@app.route('/preprocess', methods=['POST'])
-def preprocess_images():
+@app.route('/validate-shoreline', methods=['POST'])
+def validate_shoreline():
     """
-    Step 1: Preprocessing with shoreline validation
+    Pre-Step: Shoreline validation - validates if the uploaded images contain shorelines
     """
     data = request.json
     if not data or 'fileIds' not in data or not data['fileIds']:
@@ -175,12 +164,12 @@ def preprocess_images():
     file_info = uploaded_files_cache[upload_id]
     
     if file_info.get('state') != 'uploaded':
-        return jsonify({'error': 'Files have already been preprocessed'}), 400
+        return jsonify({'error': 'Files have already been validated'}), 400
     
     file_paths = file_info['file_paths']
     file_names = file_info['file_names']
     
-    uploaded_files_cache[upload_id]['preprocessed_images'] = []
+    validation_results = []
     
     for i, (image_path, image_name) in enumerate(zip(file_paths, file_names)):
         # Basic image validation
@@ -199,11 +188,83 @@ def preprocess_images():
         
         # Shoreline validation if available
         if shoreline_validation_available:
-            if not is_shoreline(image_path):
+            is_shore = is_shoreline(image_path)
+            validation_results.append({
+                'filename': image_name,
+                'contains_shoreline': str(is_shore)
+            })
+            
+            if not is_shore:
                 return jsonify({
                     'error': f'Image {image_name} does not appear to contain a shoreline. Please upload satellite images of coastal areas.',
                     'invalidImage': image_name
                 }), 400
+        else:
+            validation_results.append({
+                'filename': image_name,
+                'contains_shoreline': 'true'
+            })
+    
+    # All images passed validation
+    uploaded_files_cache[upload_id]['validation_results'] = validation_results
+    uploaded_files_cache[upload_id]['state'] = 'validated'
+    
+    return jsonify({
+        'message': 'Shoreline validation completed',
+        'fileId': upload_id,
+        'validationResults': validation_results,
+        'step': 0.5,
+        'next': '/preprocess'
+    }), 200
+
+@app.route('/preprocess', methods=['POST'])
+def preprocess_images():
+    """
+    Step 1: Preprocessing with shoreline validation
+    """
+    data = request.json
+    if not data or 'fileIds' not in data or not data['fileIds']:
+        return jsonify({'error': 'No file IDs provided'}), 400
+    
+    upload_id = data['fileIds'][0]
+    
+    if upload_id not in uploaded_files_cache:
+        return jsonify({'error': 'Invalid file ID or files have expired'}), 400
+    
+    file_info = uploaded_files_cache[upload_id]
+    
+    if file_info.get('state') not in ['uploaded', 'validated']:
+        return jsonify({'error': 'Files have already been preprocessed'}), 400
+    
+    file_paths = file_info['file_paths']
+    file_names = file_info['file_names']
+    
+    uploaded_files_cache[upload_id]['preprocessed_images'] = []
+    
+    for i, (image_path, image_name) in enumerate(zip(file_paths, file_names)):
+        # If we already validated, we can skip basic validation checks
+        if file_info.get('state') != 'validated':
+            # Basic image validation
+            img = cv2.imread(image_path)
+            if img is None:
+                return jsonify({
+                    'error': f'Image {image_name} could not be loaded. The file may be corrupted.',
+                    'invalidImage': image_name
+                }), 400
+            
+            if img.shape[0] < 100 or img.shape[1] < 100:
+                return jsonify({
+                    'error': f'Image {image_name} is too small. Please use images of at least 100x100 pixels.',
+                    'invalidImage': image_name
+                }), 400
+            
+            # Shoreline validation if available
+            if shoreline_validation_available:
+                if not is_shoreline(image_path):
+                    return jsonify({
+                        'error': f'Image {image_name} does not appear to contain a shoreline. Please upload satellite images of coastal areas.',
+                        'invalidImage': image_name
+                    }), 400
         
         uploaded_files_cache[upload_id]['preprocessed_images'].append({
             'original_path': image_path,
@@ -217,13 +278,13 @@ def preprocess_images():
         'message': 'Image preprocessing completed',
         'fileId': upload_id,
         'step': 1,
-        'next': '/detect-shoreline'
+        'next': '/create-masks'
     }), 200
 
-@app.route('/detect-shoreline', methods=['POST'])
-def detect_shoreline():
+@app.route('/create-masks', methods=['POST'])
+def create_masks():
     """
-    Step 2: Shoreline detection - applies the models to detect shorelines
+    Step 2: Making mask images - applies the models to create water-land boundary masks
     """
     data = request.json
     if not data or 'fileIds' not in data or not data['fileIds']:
@@ -285,7 +346,7 @@ def detect_shoreline():
             
         except Exception as e:
             return jsonify({
-                'error': f"Error detecting shoreline in image {image_name}: {str(e)}",
+                'error': f"Error creating mask image for {image_name}: {str(e)}",
                 'invalidImage': image_name
             }), 500
     
@@ -300,16 +361,16 @@ def detect_shoreline():
     uploaded_files_cache[upload_id]['state'] = 'shorelines_detected'
     
     return jsonify({
-        'message': 'Shoreline detection completed',
+        'message': 'Mask images created successfully',
         'fileId': upload_id,
         'step': 2,
-        'next': '/measure-changes'
+        'next': '/compare-segmentations'
     }), 200
 
-@app.route('/measure-changes', methods=['POST'])
-def measure_changes():
+@app.route('/compare-segmentations', methods=['POST'])
+def compare_segmentations_endpoint():
     """
-    Step 3: Measuring changes - computes the EPR and NSM values
+    Step 3: Compares two segmented images to check if they are from the same coastal area
     """
     data = request.json
     if not data or 'fileIds' not in data or not data['fileIds']:
@@ -322,6 +383,55 @@ def measure_changes():
     
     file_info = uploaded_files_cache[upload_id]
     if file_info.get('state') != 'shorelines_detected':
+        return jsonify({'error': 'Mask images must be created first'}), 400
+    
+    processed_info = file_info['processed']
+    file_names = file_info['file_names']
+    
+    # Get the segmentation paths
+    unet_paths = processed_info['unet_paths']
+    
+    if len(unet_paths) < 2:
+        return jsonify({
+            'error': 'At least two images are required to compare segmentations',
+        }), 400
+    
+    # Compare the first two images
+    is_similar = compare_segmentations(unet_paths[0], unet_paths[1])
+    
+    if not is_similar:
+        return jsonify({
+            'error': f'The shorelines detected in {file_names[0]} and {file_names[1]} are too different. Please ensure both images are from the same coastal area.',
+            'invalidImage': file_names[1],
+            'isSimilar': False
+        }), 400
+    
+    # Mark the comparison as completed
+    file_info['state'] = 'compared'
+    
+    return jsonify({
+        'message': 'Images contain similar shoreline patterns',
+        'isSimilar': True,
+        'step': 3,
+        'next': '/measure-changes'
+    }), 200
+
+@app.route('/measure-changes', methods=['POST'])
+def measure_changes():
+    """
+    Step 4: Measuring changes - computes the EPR and NSM values
+    """
+    data = request.json
+    if not data or 'fileIds' not in data or not data['fileIds']:
+        return jsonify({'error': 'No file IDs provided'}), 400
+    
+    upload_id = data['fileIds'][0]
+    
+    if upload_id not in uploaded_files_cache:
+        return jsonify({'error': 'Invalid file ID or files have expired'}), 400
+    
+    file_info = uploaded_files_cache[upload_id]
+    if file_info.get('state') not in ['shorelines_detected', 'compared']:
         return jsonify({'error': 'Shorelines must be detected first'}), 400
     
     processed_info = file_info['processed']
@@ -332,7 +442,8 @@ def measure_changes():
     segnet_paths = processed_info['segnet_paths']
     fcn8_paths = processed_info['fcn8_paths']
     
-    if len(unet_paths) >= 2:
+    # If we haven't verified the images are similar, do it now
+    if file_info.get('state') != 'compared' and len(unet_paths) >= 2:
         is_similar = compare_segmentations(unet_paths[0], unet_paths[1])
         
         if not is_similar:
@@ -393,7 +504,8 @@ def measure_changes():
         'message': 'Shoreline change analysis completed',
         'results': processed_info['result_paths'],
         'models': models_data,
-        'step': 3
+        'step': 4,
+        'next': '/generate-report'
     }), 200
 
 @app.route('/result/<filename>', methods=['GET'])
@@ -401,7 +513,6 @@ def get_result(filename):
     """Serve result images"""
     return send_file(os.path.join(app.config['RESULT_FOLDER'], filename), mimetype='image/png')
 
-# Add this right before app.run() to define API_BASE_URL
 @app.route('/api-info', methods=['GET'])
 def api_info():
     """Return information about the API for testing connections"""
@@ -410,7 +521,6 @@ def api_info():
         'message': 'Shoreline Analysis API is running'
     }), 200
 
-# Add this endpoint for testing connections
 @app.route('/test-connection', methods=['GET', 'POST'])
 def test_connection():
     """Simple endpoint to test if the API is reachable"""
@@ -420,11 +530,8 @@ def test_connection():
         'method': request.method
     }), 200
 
-if __name__ == '__main__':
-    # Use host='0.0.0.0' to make it accessible from other devices/containers
-    app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
-
 def get_fallback_data(model_name):
+    """Provide fallback data if a model analysis fails"""
     fallbacks = {
         "DeepLab v3": {"EPR": -1.32, "NSM": -16.2},
         "SegNet": {"EPR": -1.18, "NSM": -14.7},
@@ -436,3 +543,6 @@ def get_fallback_data(model_name):
         'EPR': data["EPR"],
         'NSM': data["NSM"]
     }
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)

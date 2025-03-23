@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import UploadArea from "../components/UploadArea";
 import { ArrowRight, Layers, Activity, Map, X } from "lucide-react";
-import axios from "axios";
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const API_BASE_URL = "http://localhost:5000";
@@ -13,7 +12,7 @@ const Upload = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // All state declarations at the top
+  // State declarations
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [files, setFiles] = useState<File[]>([]);
@@ -28,15 +27,12 @@ const Upload = () => {
   const [isCancelled, setIsCancelled] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<any[]>([]);
   const [clearUploadArea, setClearUploadArea] = useState<(() => void) | null>(null);
+  const [processingStep, setProcessingStep] = useState<number | null>(null);
   
-  // This will run when the component mounts or when the location changes
   useEffect(() => {
-    // Scroll to top when component mounts
     window.scrollTo(0, 0);
     
-    // Create a cleanup function
     return () => {
-      // Clean up states when navigating away
       toast.dismiss();
       setAnalysisComplete(false);
       setShowResults(false);
@@ -46,19 +42,22 @@ const Upload = () => {
     };
   }, []);
 
-  const minFiles = 2;
-  const maxFiles = 5;
-
-  const [analysisSteps, setAnalysisSteps] = useState([
+  const [analysisSteps] = useState([
     {
-      name: "Preprocessing image",
-      description:
-        "Applying radiometric calibration and atmospheric correction",
+      name: "Validating shoreline images",
+      description: "Verifying that uploaded images contain identifiable shorelines",
     },
     {
-      name: "Detecting shoreline",
-      description:
-        "Applying machine learning algorithms to identify water-land boundaries",
+      name: "Preprocessing images",
+      description: "Applying radiometric calibration and atmospheric correction",
+    },
+    {
+      name: "Making mask images",
+      description: "Applying machine learning algorithms to create water-land boundary masks",
+    },
+    {
+      name: "Comparing shoreline patterns",
+      description: "Verifying that images show the same geographic location",
     },
     {
       name: "Measuring changes",
@@ -71,35 +70,29 @@ const Upload = () => {
   ]);
 
   const handleUpload = async (files: File[]) => {
-    // Validate files
     if (!files || files.length < 2 || files.length > 5) {
       toast.error("Please select 2-5 files to upload");
       return;
     }
 
-    // Reset all states before starting upload
     setIsUploading(true);
     setUploadProgress(0);
     setAnalysisStep(0);
     setAnalysisComplete(false);
     setShowResults(false);
-    setFiles(files); // Store files for reference
+    setFiles(files);
     setError(null);
     setErrorIndex(null);
 
     try {
-      // Create FormData with files - THIS WAS MISSING
       const formData = new FormData();
       
-      // Add files with the key 'files' that Flask is expecting
       files.forEach(file => {
         formData.append('files', file);
       });
 
-      // Show a loading toast
       const loadingToast = toast.loading("Uploading files...");
 
-      // Simulate upload progress (for development/testing)
       const simulateUploadProgress = () => {
         const interval = setInterval(() => {
           setUploadProgress((prev) => {
@@ -125,49 +118,38 @@ const Upload = () => {
           throw new Error("Failed to upload files");
         }
 
-        // Parse the upload response that should contain file IDs or paths
         const uploadData = await uploadResponse.json();
         const fileIds = uploadData.fileIds;
         
-        // Store the file IDs
         setUploadedFileIds(fileIds);
         
-        // Clear the simulated interval and set progress to 100%
         clearInterval(uploadInterval);
         setUploadProgress(100);
         
-        // Dismiss the loading toast
         toast.dismiss(loadingToast);
         toast.success("Files uploaded successfully!");
         
-        // Store the image URL but don't display it
         setUploadedImage(URL.createObjectURL(files[0]));
         
-        // Wait a short moment before showing the first button
         setTimeout(() => {
           setAnalysisStep(0);
-          setActiveButton(1); // Show the preprocessing button
+          setActiveButton(0.5);
         }, 800);
       } catch (apiError) {
-        // For demo purposes only - in production, you'd properly handle the error
         const mockFileIds = ['mock-file-1', 'mock-file-2'];
         setUploadedFileIds(mockFileIds);
         
-        // Clear the simulated interval and set progress to 100%
         clearInterval(uploadInterval);
         setUploadProgress(100);
         
-        // Dismiss the loading toast
         toast.dismiss(loadingToast);
         toast.success("Files uploaded successfully (mock data)");
         
-        // Store the image URL but don't display it
         setUploadedImage(URL.createObjectURL(files[0]));
         
-        // Start the analysis process with mock file IDs
         setTimeout(() => {
           setAnalysisStep(0);
-          setActiveButton(1); // Show the preprocessing button
+          setActiveButton(0.5);
         }, 800);
       }
     } catch (error) {
@@ -178,23 +160,18 @@ const Upload = () => {
   };
 
   const handleCancelAnalysis = () => {
-    // For a complete reset, reload the page
     window.location.reload();
-    
-    // The toast won't be visible after reload, but we'll keep it
-    // in case there's a delay before the page refresh
     toast.error("Analysis cancelled");
   };
 
-  // Fix startPreprocessing function
   const startPreprocessing = async (fileIds: string[]) => {
     setError(null);
     setErrorIndex(null);
-    setAnalysisStep(1); // Set to step 1
-    setActiveButton(null); // Hide button while processing
+    setAnalysisStep(1);
+    setActiveButton(null);
+    setProcessingStep(1);
     
     try {
-      // Show a loading toast
       const loadingToast = toast.loading("Preprocessing images...");
       
       const response = await fetch(`${API_BASE_URL}/preprocess`, {
@@ -205,18 +182,34 @@ const Upload = () => {
         body: JSON.stringify({ fileIds })
       });
       
-      const data = await response.json();
-      
-      // Dismiss loading toast
       toast.dismiss(loadingToast);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server error:", errorText);
         toast.error("Preprocessing failed");
+        setError(`Server error: ${response.status} ${response.statusText}`);
+        setIsCancelled(true);
+        setProcessingStep(null);
+        return false;
+      }
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("JSON parse error:", jsonError);
+        toast.error("Error processing server response");
+        setError('Error processing server response');
+        setIsCancelled(true);
+        setProcessingStep(null);
+        return false;
+      }
+      
+      if (data.error) {
+        toast.error(data.error);
         
         if (data.invalidImage) {
-          setError(data.error || "Problem with image");
-          
-          // Find index of problematic image
           const errorImgIndex = files.findIndex(
             file => file.name === data.invalidImage
           );
@@ -224,39 +217,46 @@ const Upload = () => {
           if (errorImgIndex !== -1) {
             setErrorIndex(errorImgIndex);
           }
-        } else {
-          setError(data.error || 'Failed to preprocess images');
         }
         
+        setError(data.error || 'Failed to preprocess images');
         setIsCancelled(true);
+        setProcessingStep(null);
         return false;
       }
       
-      // Show the next button after successful preprocessing
       toast.success("Preprocessing complete");
-      setActiveButton(2); // Show detect shoreline button
+      setProcessingStep(null);
+      
+      setAnalysisStep(2);
+      
+      setTimeout(() => {
+        setActiveButton(2);
+      }, 300);
+      
       return true;
       
     } catch (err) {
+      console.error("Network or parsing error:", err);
       toast.error("Network error during preprocessing");
       setError('Network error: Could not connect to the preprocessing server');
       setIsCancelled(true);
+      setProcessingStep(null);
       return false;
     }
   };
 
-  // Fix detectShoreline function
   const detectShoreline = async (fileIds: string[]) => {
     setError(null);
     setErrorIndex(null);
-    setAnalysisStep(2); // Set to step 2
-    setActiveButton(null); // Hide button while processing
+    setAnalysisStep(2);
+    setActiveButton(null);
+    setProcessingStep(2);
     
     try {
-      // Show a loading toast
-      const loadingToast = toast.loading("Detecting shorelines...");
+      const loadingToast = toast.loading("Creating mask images...");
       
-      const response = await fetch(`${API_BASE_URL}/detect-shoreline`, {
+      const response = await fetch(`${API_BASE_URL}/create-masks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -266,16 +266,14 @@ const Upload = () => {
       
       const data = await response.json();
       
-      // Dismiss loading toast
       toast.dismiss(loadingToast);
       
       if (!response.ok) {
-        toast.error("Shoreline detection failed");
+        toast.error("Mask creation failed");
         
         if (data.invalidImage) {
           setError(data.error || "Problem with image");
           
-          // Find index of problematic image
           const errorImgIndex = files.findIndex(
             file => file.name === data.invalidImage
           );
@@ -284,35 +282,106 @@ const Upload = () => {
             setErrorIndex(errorImgIndex);
           }
         } else {
-          setError(data.error || 'Failed to detect shoreline');
+          setError(data.error || 'Failed to create mask images');
         }
         
+        setIsCancelled(true);
+        setProcessingStep(null);
+        return false;
+      }
+      
+      toast.success("Mask images created successfully");
+      setProcessingStep(null);
+      
+      setAnalysisStep(3);
+      
+      setTimeout(() => {
+        setActiveButton(3.5);
+      }, 300);
+      
+      return true;
+      
+    } catch (err) {
+      toast.error("Network error during mask creation");
+      setError('Network error: Could not connect to the server');
+      setIsCancelled(true);
+      setProcessingStep(null);
+      return false;
+    }
+  };
+
+  const compareSegmentations = async (fileIds: string[]) => {
+    setError(null);
+    setErrorIndex(null);
+    setAnalysisStep(3);
+    setActiveButton(null);
+    setProcessingStep(3);
+    
+    try {
+      const loadingToast = toast.loading("Comparing shoreline patterns...");
+      
+      const response = await fetch(`${API_BASE_URL}/compare-segmentations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ fileIds })
+      });
+      
+      const data = await response.json();
+      
+      toast.dismiss(loadingToast);
+      
+      if (!response.ok) {
+        toast.error("Comparison failed");
+        
+        if (data.invalidImage) {
+          setError(data.error || "Problem with image");
+          
+          const errorImgIndex = files.findIndex(
+            file => file.name === data.invalidImage
+          );
+          
+          if (errorImgIndex !== -1) {
+            setErrorIndex(errorImgIndex);
+          }
+        } else {
+          setError(data.error || 'Failed to compare images');
+        }
+        
+        setProcessingStep(null);
         setIsCancelled(true);
         return false;
       }
       
-      // Show the next button after successful shoreline detection
-      toast.success("Shoreline detection complete");
-      setActiveButton(3); // Show measure changes button
+      toast.success(data.message || "Images contain similar shoreline patterns");
+      setProcessingStep(null);
+      
+      setAnalysisStep(4);
+      
+      setTimeout(() => {
+        setActiveButton(4);
+      }, 300);
+      
       return true;
       
     } catch (err) {
-      toast.error("Network error during shoreline detection");
-      setError('Network error: Could not connect to the analysis server');
+      toast.error("Network error during comparison");
+      setError('Network error: Could not connect to the server');
+      setProcessingStep(null);
       setIsCancelled(true);
       return false;
     }
   };
 
-  // Fix measureShorelines function
   const measureShorelines = async (fileIds: string[]) => {
     setError(null);
     setErrorIndex(null);
-    setAnalysisStep(3); // Set to step 3
-    setActiveButton(null); // Hide button while processing
+    setAnalysisStep(4);
+    setActiveButton(null);
+    setProcessingStep(4);
     
     try {
-      // Show a loading toast
       const loadingToast = toast.loading("Measuring shoreline changes...");
       
       const response = await fetch(`${API_BASE_URL}/measure-changes`, {
@@ -323,20 +392,15 @@ const Upload = () => {
         body: JSON.stringify({ fileIds })
       });
       
-      // Always parse the response, regardless of status
       const data = await response.json();
       
-      // Dismiss loading toast
       toast.dismiss(loadingToast);
       
-      // Check if response was not successful
       if (!response.ok) {
         toast.error("Measuring changes failed");
         
-        // Set error message from the response
         setError(data.error || 'An error occurred during shoreline analysis');
         
-        // If there's an invalid image specified, set the error index
         if (data.invalidImage) {
           const errorIdx = files.findIndex(f => f.name === data.invalidImage);
           if (errorIdx !== -1) {
@@ -345,61 +409,132 @@ const Upload = () => {
         }
         
         setIsCancelled(true);
+        setProcessingStep(null);
         return false;
       }
       
-      // Success - set results
       toast.success("Change measurements complete");
+      setProcessingStep(null);
       
-      // Set the results but don't show them yet
       setAnalysisResults(data.models);
       
-      // Show the next button after successful measurement
-      setActiveButton(4); // Show generate report button
+      setAnalysisStep(5);
+      
+      setTimeout(() => {
+        setActiveButton(5);
+      }, 300);
+      
       return true;
       
     } catch (err) {
       toast.error("Network error during measurement");
       setError('Network error: Could not connect to the analysis server');
       setIsCancelled(true);
+      setProcessingStep(null);
       return false;
     }
   };
 
-  // Add missing generateReport function
   const generateReport = () => {
-    setAnalysisStep(4); // Set to step 4
-    setActiveButton(null); // Hide buttons
+    setAnalysisStep(5);
+    setActiveButton(null);
+    setProcessingStep(5);
     
-    // Show a loading toast
     const loadingToast = toast.loading("Generating report...");
     
-    // Simulate report generation with a delay
     setTimeout(() => {
+      setProcessingStep(null);
       toast.dismiss(loadingToast);
       toast.success("Report generated successfully");
-      setAnalysisComplete(true);
-      setShowResults(true);
+      
+      setTimeout(() => {
+        setAnalysisComplete(true);
+        setShowResults(true);
+      }, 300);
     }, 2000);
     
     return true;
   };
 
-  // Function to highlight problematic images
-  const highlightProblemImage = (imageName: string) => {
-    // Find the problematic image in the files array
-    const problemIndex = files.findIndex(file => file.name === imageName);
+  const validateShoreline = async (fileIds: string[]) => {
+    setError(null);
+    setErrorIndex(null);
+    setAnalysisStep(0.5);
+    setActiveButton(null);
+    setProcessingStep(0);
     
-    if (problemIndex >= 0) {
-      // You could set some state to highlight this in your UI
-      setErrorIndex(problemIndex);
+    try {
+      const loadingToast = toast.loading("Validating shorelines...");
       
-      // Scroll to the problematic image
-      const imageElement = document.getElementById(`image-${problemIndex}`);
-      if (imageElement) {
-        imageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        imageElement.classList.add('error-highlight');
+      const response = await fetch(`${API_BASE_URL}/validate-shoreline`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ fileIds })
+      });
+      
+      toast.dismiss(loadingToast);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server error:", errorText);
+        toast.error("Shoreline validation failed");
+        setError(`Server error: ${response.status} ${response.statusText}`);
+        setIsCancelled(true);
+        setProcessingStep(null);
+        return false;
       }
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("JSON parse error:", jsonError);
+        toast.error("Error processing server response");
+        setError('Error processing server response');
+        setIsCancelled(true);
+        setProcessingStep(null);
+        return false;
+      }
+      
+      if (data.error) {
+        toast.error(data.error);
+        
+        if (data.invalidImage) {
+          const errorImgIndex = files.findIndex(
+            file => file.name === data.invalidImage
+          );
+          
+          if (errorImgIndex !== -1) {
+            setErrorIndex(errorImgIndex);
+          }
+        }
+        
+        setError(data.error || 'Failed to validate shoreline images');
+        setIsCancelled(true);
+        setProcessingStep(null);
+        return false;
+      }
+      
+      toast.success("Shoreline validation complete");
+      setProcessingStep(null);
+      
+      setAnalysisStep(1);
+      
+      setTimeout(() => {
+        setActiveButton(1);
+      }, 300);
+      
+      return true;
+      
+    } catch (err) {
+      console.error("Network or parsing error:", err);
+      toast.error("Network error during shoreline validation");
+      setError('Network error: Could not connect to the validation server');
+      setIsCancelled(true);
+      setProcessingStep(null);
+      return false;
     }
   };
 
@@ -418,7 +553,7 @@ const Upload = () => {
             isUploading={isUploading}
             uploadProgress={uploadProgress}
             setClearCallback={(clearFn) => setClearUploadArea(() => clearFn)}
-            onClearAll={handleCancelAnalysis} // Add this prop to connect directly
+            onClearAll={handleCancelAnalysis}
           />
         </div>
 
@@ -434,87 +569,98 @@ const Upload = () => {
                 Analysis Progress
               </h3>
               <div className="space-y-6">
-                {analysisSteps.map((step, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start"
-                  >
+                {analysisSteps.map((step, index) => {
+                  const stepNumber = index + 1;
+                  
+                  const isCurrentStep = 
+                    (index === 0 && analysisStep === 0.5) || 
+                    analysisStep === index;
+                  
+                  const isCompleted = 
+                    (index === 0 && analysisStep >= 1) ||
+                    (index > 0 && analysisStep > index) || 
+                    (index === 5 && analysisComplete);
+                  
+                  const isProcessing = processingStep === index;
+                  
+                  return (
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center mr-4 flex-shrink-0 ${
-                        (index === 3 && analysisComplete) || analysisStep > index
-                          ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                          : analysisStep === index
-                          ? "bg-shoreline-light-blue text-shoreline-blue"
-                          : "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
-                      }`}
+                      key={index}
+                      className="flex items-start"
                     >
-                      {(index === 3 && analysisComplete) || analysisStep > index ? (
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M5 13l4 4L19 7"
-                          ></path>
-                        </svg>
-                      ) : (
-                        <span>{index + 1}</span>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <h4
-                          className={`font-medium ${
-                            (index === 3 && analysisComplete) || analysisStep >= index
-                              ? "text-shoreline-dark dark:text-white"
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center mr-4 flex-shrink-0 ${
+                          isCompleted
+                            ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                            : isCurrentStep
+                            ? "bg-shoreline-light-blue text-shoreline-blue"
+                            : "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
+                        }`}
+                      >
+                        {isCompleted ? (
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M5 13l4 4L19 7"
+                            ></path>
+                          </svg>
+                        ) : (
+                          <span>{stepNumber}</span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between">
+                          <h4
+                            className={`font-medium ${
+                              isCompleted || isCurrentStep
+                                ? "text-shoreline-dark dark:text-white"
+                                : "text-gray-400 dark:text-gray-500"
+                            }`}
+                          >
+                            {step.name}
+                          </h4>
+                          {isProcessing && (
+                            <div className="flex items-center animate-pulse text-shoreline-blue text-sm">
+                              <div className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping mr-1"></div>
+                              <div
+                                className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping mr-1"
+                                style={{
+                                  animationDelay: "0.2s",
+                                }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping"
+                                style={{
+                                  animationDelay: "0.4s",
+                                }}
+                              ></div>
+                              <span className="ml-2">
+                                Processing...
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <p
+                          className={`text-sm ${
+                            isCompleted || isCurrentStep
+                              ? "text-shoreline-text dark:text-gray-300"
                               : "text-gray-400 dark:text-gray-500"
                           }`}
                         >
-                          {step.name}
-                        </h4>
-                        {analysisStep === index && 
-                          !(index === 3 && analysisComplete) && 
-                          !analysisComplete && (
-                          <div className="flex items-center animate-pulse text-shoreline-blue text-sm">
-                            <div className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping mr-1"></div>
-                            <div
-                              className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping mr-1"
-                              style={{
-                                animationDelay:
-                                  "0.2s",
-                              }}
-                            ></div>
-                            <div
-                              className="w-2 h-2 bg-shoreline-blue rounded-full animate-ping"
-                              style={{
-                                animationDelay:
-                                  "0.4s",
-                              }}
-                            ></div>
-                            <span className="ml-2">
-                              Processing...
-                            </span>
-                          </div>
-                        )}
+                          {step.description}
+                        </p>
                       </div>
-                      <p
-                        className={`text-sm ${
-                          (index === 3 && analysisComplete) || analysisStep >= index
-                            ? "text-shoreline-text dark:text-gray-300"
-                            : "text-gray-400 dark:text-gray-500"
-                        }`}
-                      >
-                        {step.description}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {analysisStep > 0 && !analysisComplete && (
                 <motion.div
@@ -534,6 +680,19 @@ const Upload = () => {
               {/* Step Buttons */}
               {!isCancelled && (
                 <div className="mt-8 flex justify-center">
+                  {/* Validate Shoreline Button */}
+                  {activeButton === 0.5 && (
+                    <motion.button
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={() => validateShoreline(uploadedFileIds)}
+                      className="px-5 py-2.5 bg-shoreline-blue text-white rounded-lg hover:bg-shoreline-blue/90 transition-colors flex items-center"
+                    >
+                      <span>Validate Shoreline Images</span>
+                      <ArrowRight size={16} className="ml-2" />
+                    </motion.button>
+                  )}
+                  
                   {/* Preprocessing Button */}
                   {activeButton === 1 && (
                     <motion.button
@@ -547,7 +706,7 @@ const Upload = () => {
                     </motion.button>
                   )}
                   
-                  {/* Detect Shoreline Button */}
+                  {/* Create Mask Images Button */}
                   {activeButton === 2 && (
                     <motion.button
                       initial={{ opacity: 0, y: 10 }}
@@ -555,13 +714,26 @@ const Upload = () => {
                       onClick={() => detectShoreline(uploadedFileIds)}
                       className="px-5 py-2.5 bg-shoreline-blue text-white rounded-lg hover:bg-shoreline-blue/90 transition-colors flex items-center"
                     >
-                      <span>Detect Shoreline</span>
+                      <span>Create Mask Images</span>
+                      <ArrowRight size={16} className="ml-2" />
+                    </motion.button>
+                  )}
+                  
+                  {/* Compare Shorelines Button */}
+                  {activeButton === 3.5 && (
+                    <motion.button
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={() => compareSegmentations(uploadedFileIds)}
+                      className="px-5 py-2.5 bg-shoreline-blue text-white rounded-lg hover:bg-shoreline-blue/90 transition-colors flex items-center"
+                    >
+                      <span>Compare Shoreline Patterns</span>
                       <ArrowRight size={16} className="ml-2" />
                     </motion.button>
                   )}
                   
                   {/* Measure Changes Button */}
-                  {activeButton === 3 && (
+                  {activeButton === 4 && (
                     <motion.button
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -574,7 +746,7 @@ const Upload = () => {
                   )}
                   
                   {/* Generate Report Button */}
-                  {activeButton === 4 && (
+                  {activeButton === 5 && (
                     <motion.button
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -587,7 +759,7 @@ const Upload = () => {
                   )}
                 </div>
               )}
-              {/* Only show results when both complete and showResults are true */}
+              {/* Results section */}
               {analysisComplete &&
                 showResults &&
                 analysisResults && (
@@ -606,38 +778,38 @@ const Upload = () => {
                     </h3>
 
                     {/* Model Comparison Table
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
-                                            <thead className="bg-gray-50 dark:bg-gray-700">
-                                                <tr>
-                                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                        Model
-                                                    </th>
-                                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                        EPR (End Point Rate)
-                                                    </th>
-                                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                        NSM (Net Shoreline Movement)
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                                {analysisResults.map((model, index) => (
-                                                    <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50'}>
-                                                        <td className="py-4 px-4 text-sm font-medium text-shoreline-dark dark:text-white">
-                                                            {model.model_name}
-                                                        </td>
-                                                        <td className="py-4 px-4 text-sm text-shoreline-dark dark:text-white">
-                                                            {model.EPR} m/year
-                                                        </td>
-                                                        <td className="py-4 px-4 text-sm text-shoreline-dark dark:text-white">
-                                                            {model.NSM} m
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div> */}
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+                            <thead className="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        Model
+                                    </th>
+                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        EPR (End Point Rate)
+                                    </th>
+                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        NSM (Net Shoreline Movement)
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {analysisResults.map((model, index) => (
+                                    <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50'}>
+                                        <td className="py-4 px-4 text-sm font-medium text-shoreline-dark dark:text-white">
+                                            {model.model_name}
+                                        </td>
+                                        <td className="py-4 px-4 text-sm text-shoreline-dark dark:text-white">
+                                            {model.EPR} m/year
+                                        </td>
+                                        <td className="py-4 px-4 text-sm text-shoreline-dark dark:text-white">
+                                            {model.NSM} m
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div> */}
 
                     {/* Cards View */}
                     <div className="mt-8 space-y-6">
@@ -653,36 +825,25 @@ const Upload = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
                                 <div className="text-shoreline-blue font-medium mb-1">
-                                  EPR (End
-                                  Point Rate)
+                                  EPR (End Point Rate)
                                 </div>
                                 <div className="text-2xl font-medium text-shoreline-dark dark:text-white">
-                                  {model.EPR.toFixed(2)}{" "}
-                                  m/year
+                                  {model.EPR.toFixed(2)} m/year
                                 </div>
                                 <div className="text-xs text-shoreline-text dark:text-gray-400 mt-2">
-                                  The rate of
-                                  shoreline
-                                  change over
-                                  time
+                                  The rate of shoreline change over time
                                 </div>
                               </div>
 
                               <div className="bg-shoreline-light-blue/30 dark:bg-shoreline-blue/10 p-4 rounded-lg">
                                 <div className="text-shoreline-blue font-medium mb-1">
-                                  NSM (Net
-                                  Shoreline
-                                  Movement)
+                                  NSM (Net Shoreline Movement)
                                 </div>
                                 <div className="text-2xl font-medium text-shoreline-dark dark:text-white">
-                                  {model.NSM}{" "}
-                                  m
+                                  {model.NSM} m
                                 </div>
                                 <div className="text-xs text-shoreline-text dark:text-gray-400 mt-2">
-                                  Total
-                                  movement of
-                                  shoreline
-                                  position
+                                  Total movement of shoreline position
                                 </div>
                               </div>
                             </div>
@@ -752,7 +913,6 @@ const Upload = () => {
               <div className="flex justify-end">
                 <button 
                   onClick={() => {
-                    // Force a complete page reload - this is appropriate here
                     window.location.reload();
                   }}
                   className="px-5 py-2.5 bg-shoreline-blue hover:bg-shoreline-blue/90 text-white rounded-lg transition-colors duration-200 flex items-center"
