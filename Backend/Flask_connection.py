@@ -21,10 +21,14 @@ from deepLabV3_architecture import load_Deeplab_model, run
 from Segnet_architecture import load_Segnet_model, run_segnet
 from FCN8_arciteuture import load_FCN8_model, run_FCN8
 
+# Import shoreline validation
+from shoreline_validator import load_shoreline_models, is_shoreline
+
 from EPR_NSM_calculation import run_shoreline_analysis
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+# Update CORS configuration to ensure it properly accepts all requests
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg'}
 
@@ -39,6 +43,15 @@ U_net_model = load_U_net_model()
 DeepLab_model = load_Deeplab_model()
 Segnet_model = load_Segnet_model()
 FCN8_model = load_FCN8_model()
+
+# Load shoreline validation models
+try:
+    load_shoreline_models()
+    shoreline_validation_available = True
+    print("Shoreline validation ready")
+except Exception as e:
+    print(f"Warning: Shoreline validation not available: {str(e)}")
+    shoreline_validation_available = False
 
 uploaded_files_cache = {}
 
@@ -91,44 +104,64 @@ def upload_files():
     if len(files) < 2 or len(files) > 5:
         return jsonify({'error': f'Please upload between 2 and 5 files (received {len(files)})'}), 400
     
-    file_ids = []
+    # Generate a simple session ID
+    session_id = str(int(time.time()))
+    
+    file_paths = []
     file_names = []
     
-    for file in files:
-        file_id = str(uuid.uuid4())
-        file_ids.append(file_id)
+    # Create uploads directory if it doesn't exist
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    
+    # Keep track of filenames to avoid duplicates
+    used_filenames = set()
+    
+    for i, file in enumerate(files):
+        # Get the original filename and secure it
+        original_filename = secure_filename(file.filename)
         
-        filename = secure_filename(file.filename)
-        unique_filename = f"{file_id}_{filename}"
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        # Create a numbered prefix for each file (1_, 2_, etc.)
+        prefix = f"{i+1}_"
+        
+        # Handle potential duplicates by adding a suffix if needed
+        base_name, extension = os.path.splitext(original_filename)
+        final_filename = prefix + original_filename
+        
+        counter = 1
+        while final_filename in used_filenames:
+            final_filename = f"{prefix}{base_name}_{counter}{extension}"
+            counter += 1
+            
+        used_filenames.add(final_filename)
+        
+        # Save the file with the final filename
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], final_filename)
         
         try:
             file.save(file_path)
-            file_names.append(filename)
+            file_names.append(original_filename)  # Store original name for display
+            file_paths.append(file_path)
         except Exception as e:
-            return jsonify({'error': f'Error saving file {filename}: {str(e)}'}), 500
+            return jsonify({'error': f'Error saving file {original_filename}: {str(e)}'}), 500
     
-    batch_id = str(uuid.uuid4())
-    uploaded_files_cache[batch_id] = {
-        'file_ids': file_ids,
+    # Store file information in the cache
+    uploaded_files_cache[session_id] = {
         'file_names': file_names,
-        'file_paths': [os.path.join(app.config['UPLOAD_FOLDER'], f"{file_id}_{secure_filename(name)}") 
-                      for file_id, name in zip(file_ids, file_names)],
+        'file_paths': file_paths,
         'state': 'uploaded',
         'timestamp': time.time()
     }
     
     return jsonify({
         'message': 'Files uploaded successfully',
-        'fileIds': [batch_id],
+        'fileIds': [session_id],
         'count': len(files)
     }), 200
 
 @app.route('/preprocess', methods=['POST'])
 def preprocess_images():
     """
-    Step 1: Preprocessing only - this handles the initial preprocessing step
-    and basic validation of images
+    Step 1: Preprocessing with shoreline validation
     """
     data = request.json
     if not data or 'fileIds' not in data or not data['fileIds']:
@@ -150,6 +183,7 @@ def preprocess_images():
     uploaded_files_cache[upload_id]['preprocessed_images'] = []
     
     for i, (image_path, image_name) in enumerate(zip(file_paths, file_names)):
+        # Basic image validation
         img = cv2.imread(image_path)
         if img is None:
             return jsonify({
@@ -162,6 +196,14 @@ def preprocess_images():
                 'error': f'Image {image_name} is too small. Please use images of at least 100x100 pixels.',
                 'invalidImage': image_name
             }), 400
+        
+        # Shoreline validation if available
+        if shoreline_validation_available:
+            if not is_shoreline(image_path):
+                return jsonify({
+                    'error': f'Image {image_name} does not appear to contain a shoreline. Please upload satellite images of coastal areas.',
+                    'invalidImage': image_name
+                }), 400
         
         uploaded_files_cache[upload_id]['preprocessed_images'].append({
             'original_path': image_path,
@@ -359,8 +401,28 @@ def get_result(filename):
     """Serve result images"""
     return send_file(os.path.join(app.config['RESULT_FOLDER'], filename), mimetype='image/png')
 
+# Add this right before app.run() to define API_BASE_URL
+@app.route('/api-info', methods=['GET'])
+def api_info():
+    """Return information about the API for testing connections"""
+    return jsonify({
+        'status': 'online',
+        'message': 'Shoreline Analysis API is running'
+    }), 200
+
+# Add this endpoint for testing connections
+@app.route('/test-connection', methods=['GET', 'POST'])
+def test_connection():
+    """Simple endpoint to test if the API is reachable"""
+    return jsonify({
+        'status': 'success',
+        'message': 'Connection to backend established successfully',
+        'method': request.method
+    }), 200
+
 if __name__ == '__main__':
-    app.run(debug=True, threaded=False)
+    # Use host='0.0.0.0' to make it accessible from other devices/containers
+    app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
 
 def get_fallback_data(model_name):
     fallbacks = {
