@@ -455,7 +455,7 @@ def compare_segmentations_endpoint():
 @app.route('/measure-changes', methods=['POST'])
 def measure_changes():
     """
-    Step 4: Measuring changes - computes the EPR and NSM values
+    Step 4: Measuring changes - computes the EPR and NSM values using improved sea detection
     """
     data = request.json
     if not data or 'fileIds' not in data or not data['fileIds']:
@@ -471,18 +471,16 @@ def measure_changes():
         return jsonify({'error': 'Shorelines must be detected first'}), 400
     
     processed_info = file_info['processed']
-    file_paths = file_info['file_paths']  # Original uploaded image paths
     file_names = file_info['file_names']
     
-    # Get the original satellite images
-    original_img1 = cv2.imread(file_paths[0])
-    original_img2 = cv2.imread(file_paths[1])
-    
-    if original_img1 is None or original_img2 is None:
+    # Get the preprocessed images from the cache
+    preprocessed_images = file_info.get('preprocessed_images', [])
+    if len(preprocessed_images) < 2:
         return jsonify({
-            'error': 'Could not load original satellite images'
+            'error': 'At least two preprocessed images are required'
         }), 500
     
+    # Get paths for the mask images
     unet_paths = processed_info['unet_paths']
     deeplab_paths = processed_info['deeplab_paths']
     segnet_paths = processed_info['segnet_paths']
@@ -501,42 +499,74 @@ def measure_changes():
     models_data = []
     
     try:
-        # Pass the original satellite images to the analysis function along with mask paths
-        stats_unet = run_shoreline_analysis(unet_paths[0], unet_paths[1], original_img1, original_img2, "U-net")
+        # For U-Net analysis
+        # Extract the preprocessed images for U-Net
+        unet_img1 = preprocessed_images[0]['unet_processed']
+        unet_img2 = preprocessed_images[1]['unet_processed']
+        
+        # Convert preprocessed tensors/arrays back to usable images if necessary
+        # This depends on how your preprocessing function works
+        # You might need to denormalize or reformat the preprocessed data
+        
+        stats_unet = run_shoreline_analysis(unet_paths[0], unet_paths[1], unet_img1, unet_img2, "U-net")
         models_data.append({
             'model_name': "U-net",
             'EPR': round(stats_unet["avg_epr"], 2),
-            'NSM': round(stats_unet["avg_nsm"])
+            'NSM': round(stats_unet["avg_nsm"], 2)
         })
         
         try:
-            stats_deeplab = run_shoreline_analysis(deeplab_paths[0], deeplab_paths[1], original_img1, original_img2, "DeepLab v3")
+            # For DeepLab analysis
+            deeplab_img1 = preprocessed_images[0]['deeplab_processed']
+            deeplab_img2 = preprocessed_images[1]['deeplab_processed']
+            
+            stats_deeplab = run_shoreline_analysis(
+                deeplab_paths[0], deeplab_paths[1], 
+                deeplab_img1, deeplab_img2, 
+                "DeepLab v3"
+            )
             models_data.append({
                 'model_name': "DeepLab v3",
                 'EPR': round(stats_deeplab["avg_epr"], 2),
-                'NSM': round(stats_deeplab["avg_nsm"])
+                'NSM': round(stats_deeplab["avg_nsm"], 2)
             })
         except Exception as e:
             print(f"DeepLab analysis failed: {str(e)}")
             models_data.append(get_fallback_data("DeepLab v3"))
         
         try:
-            stats_segnet = run_shoreline_analysis(segnet_paths[0], segnet_paths[1], original_img1, original_img2, "SegNet")
+            # For SegNet analysis
+            segnet_img1 = preprocessed_images[0]['segnet_processed']
+            segnet_img2 = preprocessed_images[1]['segnet_processed']
+            
+            stats_segnet = run_shoreline_analysis(
+                segnet_paths[0], segnet_paths[1], 
+                segnet_img1, segnet_img2, 
+                "SegNet"
+            )
             models_data.append({
                 'model_name': "SegNet",
                 'EPR': round(stats_segnet["avg_epr"], 2),
-                'NSM': round(stats_segnet["avg_nsm"])
+                'NSM': round(stats_segnet["avg_nsm"], 2)
             })
         except Exception as e:
             print(f"SegNet analysis failed: {str(e)}")
             models_data.append(get_fallback_data("SegNet"))
             
         try:
-            stats_fcn8 = run_shoreline_analysis(fcn8_paths[0], fcn8_paths[1], original_img1, original_img2, "FCN8")
+            # For FCN8 analysis
+            fcn8_img1 = preprocessed_images[0]['fcn8_processed']
+            fcn8_img2 = preprocessed_images[1]['fcn8_processed']
+            
+            stats_fcn8 = run_shoreline_analysis(
+                fcn8_paths[0], fcn8_paths[1], 
+                fcn8_img1, fcn8_img2, 
+                "FCN8"
+            )
             models_data.append({
                 'model_name': "FCN8",
                 'EPR': round(stats_fcn8["avg_epr"], 2),
-                'NSM': round(stats_fcn8["avg_nsm"])
+                'NSM': round(stats_fcn8["avg_nsm"], 2)
             })
         except Exception as e:
             print(f"FCN8 analysis failed: {str(e)}")
@@ -558,20 +588,7 @@ def measure_changes():
         'next': '/generate-report'
     }), 200
 
-@app.route('/result/<filename>', methods=['GET'])
-def get_result(filename):
-    """Serve result images"""
-    return send_file(os.path.join(app.config['RESULT_FOLDER'], filename), mimetype='image/png')
-
-@app.route('/api-info', methods=['GET'])
-def api_info():
-    """Return information about the API for testing connections"""
-    return jsonify({
-        'status': 'online',
-        'message': 'Shoreline Analysis API is running'
-    }), 200
-
-
+# Update the fallback data function to only include EPR and NSM
 def get_fallback_data(model_name):
     """Provide fallback data if a model analysis fails"""
     fallbacks = {
@@ -585,6 +602,19 @@ def get_fallback_data(model_name):
         'EPR': data["EPR"],
         'NSM': data["NSM"]
     }
+
+@app.route('/result/<filename>', methods=['GET'])
+def get_result(filename):
+    """Serve result images"""
+    return send_file(os.path.join(app.config['RESULT_FOLDER'], filename), mimetype='image/png')
+
+@app.route('/api-info', methods=['GET'])
+def api_info():
+    """Return information about the API for testing connections"""
+    return jsonify({
+        'status': 'online',
+        'message': 'Shoreline Analysis API is running'
+    }), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)

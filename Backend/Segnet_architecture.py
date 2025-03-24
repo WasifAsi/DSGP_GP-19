@@ -4,23 +4,9 @@ import numpy as np
 from tensorflow.keras.models import load_model
 import matplotlib.pyplot as plt
 
-def load_Segnet_model ():
+def load_Segnet_model():
     model = load_model('Model/segnet_model.h5', compile=False)
-
     return model 
-
-# Function to load and preprocess images
-def preprocess_image(image, target_size=(540, 540)):
-    # Resize image to target size
-    image_resized = cv2.resize(image, target_size)
-
-    # Normalize the image (scaling pixel values to 0-1 range)
-    image_normalized = image_resized / 255.0
-
-    # Add batch dimension (1, 540, 540, 3)
-    image_batch = np.expand_dims(image_normalized, axis=0)
-
-    return image_batch
 
 
 # Function to load images and preprocess
@@ -30,17 +16,33 @@ def load_and_preprocess_image(image_path):
 
     # If image is read properly, preprocess it
     if image is not None:
-        return preprocess_image(image)
+        # Resize the image to 540x540 (OpenCV uses (width, height) format)
+        image_resized = cv2.resize(image, (540, 540))
+        return image_resized
     else:
         raise ValueError(f"Error: Could not load image from {image_path}")
     
     
-def run_segnet(preprocessed_image, model, output_path=None):
-    # Paths
+def run_segnet(image_resized, model, output_path=None):
+    """
+    Run SegNet model prediction on a preprocessed image.
     
+    Parameters:
+        image_resized (np.array): The preprocessed input image
+        model: The loaded SegNet model
+        output_path (str, optional): Path to save the prediction output
+        
+    Returns:
+        np.array: The predicted segmentation mask
+    """
+    # Normalize the image (scaling pixel values to 0-1 range)
+    image_normalized = image_resized / 255.0
+
+    # Add batch dimension (1, 540, 540, 3)
+    image_batch = np.expand_dims(image_normalized, axis=0)
 
     # Prediction
-    prediction = model.predict(preprocessed_image)
+    prediction = model.predict(image_batch)
 
     # Remove the batch dimension and get the predicted mask
     predicted_mask = prediction.squeeze()  # This will remove the (1, height, width, channels) dimension
@@ -52,8 +54,8 @@ def run_segnet(preprocessed_image, model, output_path=None):
     # Save the prediction if an output path is provided
     if output_path:
         save_predicted_image(predicted_mask, output_path)
-        
-   
+    
+    return predicted_mask
 
 
 def save_predicted_image(prediction, output_path):
