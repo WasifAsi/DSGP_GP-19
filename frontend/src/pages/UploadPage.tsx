@@ -3,7 +3,7 @@ import SectionHeading from "../components/SectionHeading";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import UploadArea from "../components/UploadArea";
-import { ArrowRight, Layers, Activity, Map, X } from "lucide-react";
+import { ArrowRight, Layers, Activity, Map, X, Download } from "lucide-react";
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const API_BASE_URL = "http://localhost:5000";
@@ -538,6 +538,58 @@ const Upload = () => {
     }
   };
 
+  const downloadResults = async (fileId: string) => {
+    try {
+      const loadingToast = toast.loading("Preparing download...");
+      
+      // Create a direct download link to the endpoint
+      const downloadUrl = `${API_BASE_URL}/download-results/${fileId}`;
+      
+      // Use fetch to initiate the download
+      const response = await fetch(downloadUrl);
+      
+      if (!response.ok) {
+        toast.dismiss(loadingToast);
+        toast.error("Failed to download results");
+        console.error("Download failed with status:", response.status);
+        return;
+      }
+      
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Get filename from Content-Disposition header if available
+      let filename = "shoreline-analysis-results.zip";
+      const contentDisposition = response.headers.get('Content-Disposition');
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match && match[1]) {
+          filename = match[1];
+        }
+      }
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.dismiss(loadingToast);
+      toast.success("Results downloaded successfully");
+    } catch (error) {
+      toast.error("Error downloading results: " + (error as Error).message);
+      console.error("Download error:", error);
+    }
+  };
+
   return (
     <div className="pt-32 pb-24">
       <div className="container mx-auto px-4">
@@ -850,6 +902,17 @@ const Upload = () => {
                           </div>
                         )
                       )}
+                    </div>
+                    
+                    {/* Download Results Button */}
+                    <div className="mt-8 flex justify-center">
+                      <button
+                        onClick={() => downloadResults(uploadedFileIds[0])}
+                        className="px-5 py-3 bg-shoreline-blue text-white rounded-lg hover:bg-shoreline-blue/90 transition-colors flex items-center gap-2 shadow-md"
+                      >
+                        <Download size={18} />
+                        <span>Download Analysis Results</span>
+                      </button>
                     </div>
                   </motion.div>
                 )}

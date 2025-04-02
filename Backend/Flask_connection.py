@@ -24,6 +24,12 @@ from shoreline_validator import load_shoreline_models, is_shoreline
 
 from EPR_NSM_calculation import run_shoreline_analysis
 
+import zipfile
+import io
+import json
+import uuid
+import datetime
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
@@ -104,6 +110,9 @@ def upload_files():
     
     # Generate a simple session ID
     session_id = str(int(time.time()))
+    
+    # Clear the result folder for new analysis
+    clear_result_folders()
     
     file_paths = []
     file_names = []
@@ -615,6 +624,223 @@ def api_info():
         'status': 'online',
         'message': 'Shoreline Analysis API is running'
     }), 200
+
+@app.route('/download-results/<file_id>', methods=['GET'])
+def download_results(file_id):
+    """
+    Create and serve a ZIP file containing:
+    1. The original images with their original filenames
+    2. All segmented images from each model, preserving original image names
+    3. The analysis results in JSON format
+    4. A summary report in TXT format
+    """
+    if file_id not in uploaded_files_cache:
+        return jsonify({'error': 'Invalid file ID or session expired'}), 404
+    
+    file_info = uploaded_files_cache[file_id]
+    
+    if file_info.get('state') != 'completed' or 'analysis_results' not in file_info:
+        return jsonify({'error': 'Analysis not completed for this session'}), 400
+    
+    # Log what we're about to download
+    print(f"Preparing download for file_id: {file_id}")
+    
+    # Create an in-memory ZIP file
+    memory_file = io.BytesIO()
+    
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        # Add original images with their original names
+        if 'file_paths' in file_info and 'file_names' in file_info:
+            file_paths = file_info['file_paths']
+            file_names = file_info['file_names']
+            
+            print(f"Adding {len(file_paths)} original images")
+            for i, (path, name) in enumerate(zip(file_paths, file_names)):
+                if os.path.exists(path):
+                    # Use the original filename but add an index prefix to avoid collisions
+                    arcname = f"original/{i+1}_{name}"
+                    zf.write(path, arcname=arcname)
+                    print(f"Added original image: {arcname}")
+        
+        # Add result images with descriptive names that include the original filename
+        if 'processed' in file_info and 'file_names' in file_info:
+            result_paths = file_info['processed']
+            file_names = file_info['file_names']
+            
+            # Add U-Net results
+            if 'unet_paths' in result_paths:
+                print(f"Adding {len(result_paths['unet_paths'])} U-Net segmentation images")
+                for i, (path, name) in enumerate(zip(result_paths['unet_paths'], file_names)):
+                    if os.path.exists(path):
+                        arcname = f"results/unet/U-Net_{i+1}_{name}"
+                        zf.write(path, arcname=arcname)
+                        print(f"Added U-Net result: {arcname}")
+            
+            # Add DeepLab results
+            if 'deeplab_paths' in result_paths:
+                print(f"Adding {len(result_paths['deeplab_paths'])} DeepLab segmentation images")
+                for i, (path, name) in enumerate(zip(result_paths['deeplab_paths'], file_names)):
+                    if os.path.exists(path):
+                        arcname = f"results/deeplab/DeepLab_{i+1}_{name}"
+                        zf.write(path, arcname=arcname)
+                        print(f"Added DeepLab result: {arcname}")
+            
+            # Add SegNet results
+            if 'segnet_paths' in result_paths:
+                print(f"Adding {len(result_paths['segnet_paths'])} SegNet segmentation images")
+                for i, (path, name) in enumerate(zip(result_paths['segnet_paths'], file_names)):
+                    if os.path.exists(path):
+                        arcname = f"results/segnet/SegNet_{i+1}_{name}"
+                        zf.write(path, arcname=arcname)
+                        print(f"Added SegNet result: {arcname}")
+            
+            # Add FCN8 results
+            if 'fcn8_paths' in result_paths:
+                print(f"Adding {len(result_paths['fcn8_paths'])} FCN8 segmentation images")
+                for i, (path, name) in enumerate(zip(result_paths['fcn8_paths'], file_names)):
+                    if os.path.exists(path):
+                        arcname = f"results/fcn8/FCN8_{i+1}_{name}"
+                        zf.write(path, arcname=arcname)
+                        print(f"Added FCN8 result: {arcname}")
+        
+        # Check if length of paths and names matches
+        if 'processed' in file_info and 'file_names' in file_info:
+            result_paths = file_info['processed']
+            file_names = file_info['file_names']
+            
+            for model_name, model_paths in [
+                ('U-Net', result_paths.get('unet_paths', [])),
+                ('DeepLab', result_paths.get('deeplab_paths', [])),
+                ('SegNet', result_paths.get('segnet_paths', [])),
+                ('FCN8', result_paths.get('fcn8_paths', []))
+            ]:
+                if len(model_paths) != len(file_names):
+                    print(f"Warning: Mismatch between {model_name} result count ({len(model_paths)}) and original file count ({len(file_names)})")
+        
+        # Create and add analysis_results.json
+        analysis_results = file_info.get('analysis_results', [])
+        json_content = json.dumps(analysis_results, indent=2)
+        zf.writestr('analysis_results.json', json_content)
+        print("Added analysis_results.json")
+        
+        # Create and add summary.txt
+        summary = create_summary_report(file_info)
+        zf.writestr('summary.txt', summary)
+        print("Added summary.txt")
+        
+
+    
+    # Reset file pointer
+    memory_file.seek(0)
+    
+    # Create filename with timestamp
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"shoreline_analysis_{timestamp}.zip"
+    print(f"Generated ZIP file name: {filename}")
+    
+    # Set appropriate headers for the response
+    response = send_file(
+        memory_file,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=filename
+    )
+    
+    # Set additional headers to help with download issues
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    print(f"Sending download response for {filename}")
+    return response
+
+def create_summary_report(file_info):
+    """Create a human-readable summary of the analysis results"""
+    analysis_results = file_info.get('analysis_results', [])
+    file_names = file_info.get('file_names', [])
+    
+    summary = "Shoreline Change Analysis Summary Report\n"
+    summary += "=" * 50 + "\n\n"
+    
+    # Add timestamp
+    summary += f"Generated on: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+    
+    # Add information about the analyzed images
+    summary += "Analyzed Images:\n"
+    for i, name in enumerate(file_names):
+        summary += f"{i+1}. {name}\n"
+    summary += "\n"
+    
+    # Add model results
+    summary += "Analysis Results:\n"
+    summary += "-" * 50 + "\n"
+    
+    for model in analysis_results:
+        summary += f"Model: {model.get('model_name', 'Unknown')}\n"
+        summary += f"  • EPR (End Point Rate): {model.get('EPR', 'N/A')} m/year\n"
+        summary += f"  • NSM (Net Shoreline Movement): {model.get('NSM', 'N/A')} m\n"
+        summary += "\n"
+    
+    # Add interpretation guide
+    summary += "Interpretation Guide:\n"
+    summary += "-" * 50 + "\n"
+    summary += "EPR (End Point Rate): The rate of shoreline change over time.\n"
+    summary += "  • Negative values indicate erosion (shoreline moving inland).\n"
+    summary += "  • Positive values indicate accretion (shoreline moving seaward).\n\n"
+    summary += "NSM (Net Shoreline Movement): Total movement of the shoreline position in meters.\n"
+    summary += "  • Negative values indicate a net loss of land area.\n"
+    summary += "  • Positive values indicate a net gain of land area.\n\n"
+    
+    summary += "Note: Results may vary between different models due to different algorithms\n"
+    summary += "and approaches to shoreline detection. For critical applications, please\n"
+    summary += "consult with coastal engineering experts to interpret these results.\n"
+    
+    return summary
+
+def clear_result_folders(session_id=None):
+    """
+    Clears the result folders when a new upload session starts.
+    If session_id is provided, only deletes files from that specific session.
+    """
+    # Define folders that need to be cleared
+    result_folder = app.config['RESULT_FOLDER']
+    analysis_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'analysis_results')
+    
+    folders_to_clean = [result_folder, analysis_folder]
+    
+    for folder in folders_to_clean:
+        # Skip if the folder doesn't exist
+        if not os.path.exists(folder):
+            continue
+            
+        # If no specific session, clear all files in the folder
+        if session_id is None:
+            for filename in os.listdir(folder):
+                file_path = os.path.join(folder, filename)
+                try:
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        # If there are subdirectories with results, clean them too
+                        for subfile in os.listdir(file_path):
+                            sub_path = os.path.join(file_path, subfile)
+                            if os.path.isfile(sub_path):
+                                os.unlink(sub_path)
+                except Exception as e:
+                    print(f"Error deleting {file_path}: {e}")
+        # If session provided, only clear files from that session
+        else:
+            # Find files that match the session ID pattern
+            for filename in os.listdir(folder):
+                if session_id in filename:
+                    file_path = os.path.join(folder, filename)
+                    try:
+                        if os.path.isfile(file_path):
+                            os.unlink(file_path)
+                    except Exception as e:
+                        print(f"Error deleting {file_path}: {e}")
+    
+    print(f"Result and analysis folders cleared for new upload")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
