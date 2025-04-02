@@ -14,6 +14,12 @@ import cv2
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
 
+import zipfile
+import io
+import json
+import uuid
+import datetime
+
 from U_net_arciteuture import load_U_net_model, U_net_preprocess_image, U_net_predict, U_net_save_segmented_image
 from deepLabV3_architecture import load_Deeplab_model,preprocesss_deeplabv3, run_deeplabv3
 from Segnet_architecture import load_Segnet_model,load_and_preprocess_image, run_segnet
@@ -23,12 +29,6 @@ from FCN8_arciteuture import load_FCN8_model, preprocess_image, run_FCN8
 from shoreline_validator import load_shoreline_models, is_shoreline
 
 from EPR_NSM_calculation import run_shoreline_analysis
-
-import zipfile
-import io
-import json
-import uuid
-import datetime
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
@@ -528,6 +528,14 @@ def measure_changes():
             # For DeepLab analysis
             deeplab_img1 = preprocessed_images[0]['deeplab_processed']
             deeplab_img2 = preprocessed_images[1]['deeplab_processed']
+            
+            # Resize the DeepLab images to 540x540 pixels
+            # if isinstance(deeplab_img1, np.ndarray):
+            deeplab_img1 = cv2.resize(deeplab_img1, (540, 540))
+            # if isinstance(deeplab_img2, np.ndarray):
+            deeplab_img2 = cv2.resize(deeplab_img2, (540, 540))
+            
+            print(f"Resized DeepLab images to 540x540 pixels for analysis")
             
             stats_deeplab = run_shoreline_analysis(
                 deeplab_paths[0], deeplab_paths[1], 
