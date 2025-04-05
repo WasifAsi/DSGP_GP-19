@@ -20,7 +20,7 @@ import json
 import datetime
 
 from U_net_arciteuture import load_U_net_model, U_net_preprocess_image, U_net_predict, U_net_save_segmented_image
-from deepLabV3_architecture import load_Deeplab_model, preprocesss_deeplabv3, run_deeplabv3
+from deepLabV3_architecture import load_Deeplab_model, preprocesss_deeplabv3, run_deeplabv3, crop_to_square
 # Comment out SegNet import - not using this model anymore
 # from Segnet_architecture import load_Segnet_model,load_and_preprocess_image, run_segnet
 # Comment out FCN8 import - not using this model anymore
@@ -351,7 +351,7 @@ def preprocess_images():
             unet_processed = U_net_preprocess_image(image_path)
             
             # Preprocess for DeepLabV3
-            deeplab_processed = preprocesss_deeplabv3(image_path, deeplab_device)
+            deeplab_processed = preprocesss_deeplabv3(image_path)
             
             # Store all the preprocessed images
             uploaded_files_cache[upload_id]['preprocessed_images'].append({
@@ -612,9 +612,9 @@ def measure_changes():
             deeplab_img1 = preprocessed_images[0]['deeplab_processed']
             deeplab_img2 = preprocessed_images[1]['deeplab_processed']
             
-            # Resize the DeepLab images to 540x540 pixels
-            deeplab_img1 = cv2.resize(deeplab_img1, (540, 540))
-            deeplab_img2 = cv2.resize(deeplab_img2, (540, 540))
+            # Crop the image to 1024 x 1024 pixels
+            deeplab_img1 = crop_to_square(deeplab_img1)
+            deeplab_img2 = crop_to_square(deeplab_img2)
             
             print(f"\nResized DeepLab images to 540x540 pixels for analysis\n")
             
