@@ -1,0 +1,186 @@
+version: "3.1"
+
+stories:
+- story: happy path
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_great
+  - action: utter_happy
+
+- story: sad path 1
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_unhappy
+  - action: utter_cheer_up
+  - action: utter_did_that_help
+  - intent: affirm
+  - action: utter_happy
+
+- story: sad path 2
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_unhappy
+  - action: utter_cheer_up
+  - action: utter_did_that_help
+  - intent: deny
+  - action: utter_goodbye
+
+# Shoreline knowledge stories
+- story: explain shoreline analysis
+  steps:
+  - intent: explain_shoreline_analysis
+  - action: utter_explain_shoreline_analysis
+
+- story: importance of shoreline analysis
+  steps:
+  - intent: importance_of_shoreline_analysis
+  - action: utter_importance_of_shoreline_analysis
+
+- story: tools for shoreline analysis
+  steps:
+  - intent: tools_for_shoreline_analysis
+  - action: utter_tools_used
+
+- story: define coastal erosion
+  steps:
+  - intent: define_coastal_erosion
+  - action: utter_coastal_erosion
+
+- story: show example of shoreline change
+  steps:
+  - intent: show_example_shoreline_change
+  - action: utter_example_shoreline_change
+
+- story: calculate shoreline change
+  steps:
+  - intent: calculate_shoreline_change
+  - action: utter_calculate_change
+
+- story: causes of shoreline change
+  steps:
+  - intent: causes_of_shoreline_change
+  - action: utter_causes_change
+
+- story: what is DSAS
+  steps:
+  - intent: what_is_dsas
+  - action: utter_explain_dsas
+
+- story: erosion vs accretion
+  steps:
+  - intent: erosion_vs_accretion
+  - action: utter_diff_erosion_accretion
+
+- story: explain shoreline baseline
+  steps:
+  - intent: explain_baseline
+  - action: utter_baseline
+
+- story: sea level rise effect
+  steps:
+  - intent: sea_level_rise_effect
+  - action: utter_sea_level_rise
+
+- story: prevent coastal erosion
+  steps:
+  - intent: prevent_coastal_erosion
+  - action: utter_prevent_erosion
+
+- story: explain transects
+  steps:
+  - intent: explain_transects
+  - action: utter_transects
+
+- story: required datasets
+  steps:
+  - intent: required_datasets
+  - action: utter_required_datasets
+
+- story: explain shoreline retreat
+  steps:
+  - intent: explain_shoreline_retreat
+  - action: utter_shoreline_retreat
+
+- story: visualize shoreline change
+  steps:
+  - intent: visualize_shoreline_change
+  - action: utter_visualize_change
+
+- story: define coastal vulnerability
+  steps:
+  - intent: define_coastal_vulnerability
+  - action: utter_coastal_vulnerability
+
+- story: explain shapefile
+  steps:
+  - intent: explain_shapefile
+  - action: utter_shapefile
+
+- story: natural methods of coastal protection
+  steps:
+  - intent: natural_methods_protection
+  - action: utter_natural_methods
+
+- story: use QGIS for shoreline analysis
+  steps:
+  - intent: use_qgis
+  - action: utter_use_qgis
+
+# NSM/EPR specific stories
+- story: explain NSM
+  steps:
+  - intent: ask_nsm
+  - action: utter_explain_nsm
+
+- story: explain EPR
+  steps:
+  - intent: ask_epr
+  - action: utter_explain_epr
+
+- story: compare NSM and EPR
+  steps:
+  - intent: ask_nsm_epr_difference
+  - action: utter_nsm_epr_difference
+
+- story: explain shoreline change method
+  steps:
+  - intent: ask_shoreline_change_method
+  - action: utter_shoreline_change_method
+
+- story: purpose of NSM/EPR
+  steps:
+  - intent: ask_why_use_nsm_epr
+  - action: utter_why_use_nsm_epr
+
+- story: unit and scaling
+  steps:
+  - intent: ask_units_and_scale
+  - action: utter_units_and_scale
+
+- story: accuracy factors
+  steps:
+  - intent: ask_accuracy_factors
+  - action: utter_accuracy_factors
+
+- story: explain transect purpose
+  steps:
+  - intent: ask_transect_explanation
+  - action: utter_transect_explanation
+
+- story: positive/negative meaning
+  steps:
+  - intent: ask_positive_negative_meaning
+  - action: utter_positive_negative_meaning
+
+- story: number of transects
+  steps:
+  - intent: ask_how_many_transects
+  - action: utter_how_many_transects
+
+- story: erosion/accretion statistics
+  steps:
+  - intent: ask_erosion_accretion_stats
+  - action: utter_erosion_accretion_stats

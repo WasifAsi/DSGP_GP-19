@@ -1,0 +1,179 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - explain_shoreline_analysis
+  - importance_of_shoreline_analysis
+  - tools_for_shoreline_analysis
+  - define_coastal_erosion
+  - show_example_shoreline_change
+  - calculate_shoreline_change
+  - causes_of_shoreline_change
+  - what_is_dsas
+  - erosion_vs_accretion
+  - explain_baseline
+  - sea_level_rise_effect
+  - prevent_coastal_erosion
+  - explain_transects
+  - required_datasets
+  - explain_shoreline_retreat
+  - visualize_shoreline_change
+  - define_coastal_vulnerability
+  - explain_shapefile
+  - natural_methods_protection
+  - use_qgis
+  - ask_nsm
+  - ask_epr
+  - ask_nsm_epr_difference
+  - ask_shoreline_change_method
+  - ask_why_use_nsm_epr
+  - ask_units_and_scale
+  - ask_accuracy_factors
+  - ask_transect_explanation
+  - ask_positive_negative_meaning
+  - ask_how_many_transects
+  - ask_erosion_accretion_stats
+
+responses:
+
+  utter_greet:
+    - text: "Hey! How are you?"
+
+  utter_cheer_up:
+    - text: "Here is something to cheer you up:"
+      image: "/asset/pexels-sebastian-sørensen-1276518.jpg"
+
+  utter_did_that_help:
+    - text: "Did that help you?"
+
+  utter_happy:
+    - text: "Great, carry on!"
+
+  utter_goodbye:
+    - text: "Bye"
+
+  utter_iamabot:
+    - text: "I am a bot, powered by Rasa."
+
+  utter_explain_shoreline_analysis:
+    - text: "Shoreline analysis involves studying the changes and patterns of coastlines over time using maps, satellite images, and GIS tools."
+
+  utter_importance_of_shoreline_analysis:
+    - text: "It helps in understanding coastal erosion, managing coastal development, disaster risk reduction, and environmental conservation."
+
+  utter_tools_used:
+    - text: "Tools like QGIS, ArcGIS, DSAS (Digital Shoreline Analysis System), and satellite imagery are commonly used."
+
+  utter_coastal_erosion:
+    - text: "Coastal erosion is the process where shoreline materials are worn away due to wave action, currents, or human activity."
+
+  utter_example_shoreline_change:
+    - text: "Sure! Here's a sample comparison image showing shoreline retreat over 10 years."
+      image: "https://example.com/shoreline-change.png"
+
+  utter_calculate_change:
+    - text: "Shoreline change is calculated using transects and baselines in tools like DSAS, measuring distance shifts over time."
+
+  utter_causes_change:
+    - text: "Major causes include wave action, storms, sea level rise, sediment supply, and human activities like construction."
+
+  utter_explain_dsas:
+    - text: "DSAS (Digital Shoreline Analysis System) is an ArcGIS extension that calculates shoreline change rates over time."
+
+  utter_diff_erosion_accretion:
+    - text: "Erosion is the loss of coastal land, while accretion is the buildup of land due to sediment deposition."
+
+  utter_baseline:
+    - text: "A baseline is a reference line from which transects are drawn to measure shoreline movement."
+
+  utter_sea_level_rise:
+    - text: "Rising sea levels can increase coastal erosion, submerge land, and affect human settlements near the coast."
+
+  utter_prevent_erosion:
+    - text: "Coastal erosion can be reduced using seawalls, groynes, beach nourishment, and vegetation planting."
+
+  utter_transects:
+    - text: "Transects are lines drawn perpendicular to the shoreline to measure distance changes over time."
+
+  utter_required_datasets:
+    - text: "Common datasets include satellite imagery, historical maps, LiDAR data, and tidal information."
+
+  utter_shoreline_retreat:
+    - text: "Shoreline retreat is the landward movement of the shoreline over time, often due to erosion or rising sea levels."
+
+  utter_visualize_change:
+    - text: "Use GIS tools like QGIS or ArcGIS to overlay historical images and draw change maps."
+
+  utter_coastal_vulnerability:
+    - text: "Coastal vulnerability refers to the susceptibility of coastal areas to hazards like erosion, storms, and flooding."
+
+  utter_shapefile:
+    - text: "A shoreline shapefile contains the spatial data of coastlines and is used in GIS for analysis and visualization."
+
+  utter_natural_methods:
+    - text: "Mangroves, dunes, coral reefs, and coastal vegetation act as natural buffers against erosion and flooding."
+
+  utter_use_qgis:
+    - text: "Yes, QGIS is an open-source GIS tool that supports shoreline mapping, change detection, and spatial analysis."
+  
+  utter_explain_nsm:
+    - text: |
+        NSM (Net Shoreline Movement) measures how far the shoreline has moved between two dates. 
+        It's the distance between two shorelines measured along a line called a transect.
+        Positive NSM means accretion (shoreline moves seaward), negative means erosion.
+
+  utter_explain_epr:
+    - text: |
+        EPR (End Point Rate) is the rate of shoreline change over time. It is calculated by dividing NSM by the time period between satellite images. 
+        It's expressed in meters per year (m/year).
+
+  utter_nsm_epr_difference:
+    - text: |
+        NSM gives the total shoreline movement distance, while EPR gives the rate per year. EPR = NSM / time interval. 
+        NSM tells *how far*, EPR tells *how fast*.
+
+  utter_shoreline_change_method:
+    - text: |
+        Our system uses a deep learning model to extract shorelines from two satellite images. It generates perpendicular transects, finds where they intersect both shorelines, and calculates NSM. Then EPR is calculated by dividing NSM by the time interval.
+
+  utter_why_use_nsm_epr:
+    - text: |
+        NSM and EPR help us monitor coastal changes like erosion and accretion. They’re important for environmental studies, urban planning, and disaster risk management.
+
+  utter_units_and_scale:
+    - text: |
+        The measurements start in pixels, then we convert them to meters using the satellite’s spatial resolution. NSM is in meters, and EPR is in meters per year (m/year).
+
+  utter_accuracy_factors:
+    - text: |
+        Accuracy can be affected by image resolution, cloud cover, shoreline complexity, and time difference. We improve it using deep learning and orientation-aware component analysis.
+
+  utter_transect_explanation:
+    - text: |
+        A transect is a straight line drawn perpendicular to the shoreline. We use multiple evenly spaced transects to measure how far the shoreline moved at different locations.
+
+  utter_positive_negative_meaning:
+    - text: |
+        A positive NSM or EPR means accretion — the shoreline moved seaward. A negative value means erosion — the shoreline retreated inland.
+
+  utter_how_many_transects:
+    - text: |
+        Typically, we use 50 to 100 evenly spaced transects, depending on image size and shoreline length. More transects give better coverage.
+
+  utter_erosion_accretion_stats:
+    - text: |
+        Yes! We calculate:
+        - Average, min, and max NSM (in meters)
+        - Average, min, max, and std deviation of EPR
+        - % of transects showing erosion or accretion
+        Results are saved as CSV.
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
