@@ -302,6 +302,7 @@ const UploadArea = ({
           {error}
         </motion.div>
       )}
+
     </div>
   );
 };

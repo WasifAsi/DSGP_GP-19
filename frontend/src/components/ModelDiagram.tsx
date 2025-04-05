@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CameraIcon,BrainCircuit, Image } from 'lucide-react';
+import { CameraIcon, BrainCircuit, Image } from 'lucide-react';
 
 const ModelDiagram = () => {
   return (
