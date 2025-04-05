@@ -9,5 +9,7 @@
   "devDependencies": {
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4"
+
+    "axios": "^1.8.4"
   }
 }

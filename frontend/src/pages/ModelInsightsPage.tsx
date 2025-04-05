@@ -230,6 +230,7 @@ const ModelInsightsPage: React.FC = () => {
       </div>
     </div>
   );
+
 };
 
 export default ModelInsightsPage;
