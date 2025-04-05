@@ -1,107 +1,111 @@
 import os
-import torch
-import torch.nn as nn
-import torchvision.models as models
-import torchvision.transforms as transforms
-from PIL import Image
-import joblib
+import tensorflow as tf
+import numpy as np
+import pickle
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 
-class FeatureExtractor(nn.Module):
-    """
-    Feature extractor model based on ResNet18 that outputs a 512-dimensional feature vector
-    """
-    def __init__(self):
-        super(FeatureExtractor, self).__init__()
-        # Load a pretrained ResNet18 model
-        resnet = models.resnet18(pretrained=True)
-        # Remove the final fully connected layer to obtain feature vector
-        self.features = nn.Sequential(*list(resnet.children())[:-1])
-    
-    def forward(self, x):
-        x = self.features(x)          # shape: [batch_size, 512, 1, 1]
-        x = x.view(x.size(0), -1)     # flatten to: [batch_size, 512]
-        return x
-
-# Initialize global variables
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-shoreline_feature_extractor = None
-oc_svm = None
-shoreline_transform = None
+# Global variables to store models
+autoencoder = None
+encoder = None
+ocsvm = None
+models_loaded = False
 
 def load_shoreline_models():
-    """
-    Loads the feature extractor and SVM models for shoreline validation
-    """
-    global shoreline_feature_extractor, oc_svm, shoreline_transform
+    global autoencoder, encoder, ocsvm, models_loaded
     
-    # Define the directory for model files
-    model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shorline validater models')
-    os.makedirs(model_dir, exist_ok=True)
+    if models_loaded:
+        return True
     
-    # Initialize the feature extractor
-    shoreline_feature_extractor = FeatureExtractor().to(device)
+    try:
+        # Load the autoencoder model
+        autoencoder_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shorline_validater_models/autoencoder.h5')
+        autoencoder = load_model(autoencoder_path, custom_objects={'mse': tf.keras.losses.MeanSquaredError()})
+        print("\nAutoencoder loaded successfully.")
+        
+        # Load the encoder model
+        encoder_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shorline_validater_models/encoder.h5')
+        encoder = load_model(encoder_path, custom_objects={'mse': tf.keras.losses.MeanSquaredError()})
+        print("Encoder loaded successfully.")
+        
+        # Load the One-Class SVM model
+        ocsvm_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shorline_validater_models/ocsvm_model.pkl')
+        with open(ocsvm_path, "rb") as f:
+            ocsvm = pickle.load(f)
+        print("One-Class SVM loaded successfully.")
+        
+        models_loaded = True
+        return True
     
-    # Model paths
-    feature_extractor_path = os.path.join(model_dir, 'feature_extractor.pth')
-    svm_path = os.path.join(model_dir, 'one_class_svm_model.pkl')
-    
-    # Check if model files exist
-    if not os.path.exists(feature_extractor_path) or not os.path.exists(svm_path):
-        raise FileNotFoundError(f"Shoreline validation model files not found. Make sure the files are in the {model_dir} directory.")
-    
-    # Load the models
-    shoreline_feature_extractor.load_state_dict(torch.load(feature_extractor_path, map_location=device))
-    shoreline_feature_extractor.eval()
-    
-    # Load the One-Class SVM model
-    oc_svm = joblib.load(svm_path)
-    
-    # Define the transform pipeline
-    shoreline_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
-    ])
-    
-    print("Shoreline validation models loaded successfully")
+    except Exception as e:
+        print(f"Error loading shoreline validation models: {str(e)}")
+        print("Make sure autoencoder.h5, encoder.h5, and ocsvm_model.pkl are in the current directory")
+        return False
+
+
+
+
+def preprocess_image_for_validation(image_path, target_size=(128, 128)):
+    try:
+        # Load the image
+        img = load_img(image_path, target_size=target_size)
+        img_array = img_to_array(img) / 255.0  # Normalize pixel values to [0, 1]
+        
+        return np.expand_dims(img_array, axis=0)
+    except Exception as e:
+        print(f"Error preprocessing image: {str(e)}")
+        return None
+
+
+
+
 
 def is_shoreline(image_path):
     """
-    Given an image path, checks if it contains a shoreline
-    Returns True for shoreline, False otherwise
+    Check if an image contains a shoreline
+    
+    Args:
+        image_path: Path to the image file
+        
+    Returns:
+        bool: True if the image contains a shoreline, False otherwise
     """
+    global autoencoder, encoder, ocsvm, models_loaded
+    
+    if not models_loaded:
+        success = load_shoreline_models()
+        if not success:
+            print("Models not loaded - assuming image is valid")
+            return True
+    
     try:
-        if shoreline_feature_extractor is None or oc_svm is None or shoreline_transform is None:
-            load_shoreline_models()
-            
-        # Open and convert the image
-        pil_image = Image.open(image_path).convert("RGB")
+        # Preprocess the image
+        test_img = preprocess_image_for_validation(image_path)
+        if test_img is None:
+            # If preprocessing fails, assume it's not valid
+            return False
         
-        # Apply transformation and add batch dimension
-        img_tensor = shoreline_transform(pil_image).unsqueeze(0).to(device)
+        # Extract latent features using the encoder
+        test_encoded = encoder.predict(test_img)
         
-        # Extract features
-        with torch.no_grad():
-            feat = shoreline_feature_extractor(img_tensor)
-            
-        # Convert to numpy for the SVM
-        feat = feat.cpu().numpy()
+        # Flatten the features if necessary
+        test_flattened = test_encoded.reshape(test_encoded.shape[0], -1)
         
-        # Predict using SVM (+1 for shoreline, -1 for non-shoreline)
-        pred = oc_svm.predict(feat)
+        # Predict using the One-Class SVM
+        test_prediction = ocsvm.predict(test_flattened)
+        prediction_result = test_prediction[0]  # 1 means similar to shoreline, -1 means anomaly
         
         # Add feedback message
-        is_shore = (pred[0] == 1)
+        is_shore = (prediction_result == 1)
         image_name = os.path.basename(image_path)
         
         if is_shore:
-            # Simple one-line message that will appear in your Flask logs
             print(f"SHORELINE DETECTED: {image_name}")
         else:
-            print(f"NO SHORELINE DETECTED: {image_name}")
+            print(f"NO SHORELINE DETECTED: {image_name} (anomaly)")
             
         return is_shore
+    
     except Exception as e:
         print(f"ERROR CHECKING SHORELINE: {os.path.basename(image_path)} - {str(e)}")
         return False

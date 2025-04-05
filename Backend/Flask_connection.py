@@ -17,13 +17,14 @@ from skimage.metrics import structural_similarity as ssim
 import zipfile
 import io
 import json
-import uuid
 import datetime
 
 from U_net_arciteuture import load_U_net_model, U_net_preprocess_image, U_net_predict, U_net_save_segmented_image
-from deepLabV3_architecture import load_Deeplab_model,preprocesss_deeplabv3, run_deeplabv3
-from Segnet_architecture import load_Segnet_model,load_and_preprocess_image, run_segnet
-from FCN8_arciteuture import load_FCN8_model, preprocess_image, run_FCN8
+from deepLabV3_architecture import load_Deeplab_model, preprocesss_deeplabv3, run_deeplabv3
+# Comment out SegNet import - not using this model anymore
+# from Segnet_architecture import load_Segnet_model,load_and_preprocess_image, run_segnet
+# Comment out FCN8 import - not using this model anymore
+# from FCN8_arciteuture import load_FCN8_model, preprocess_image, run_FCN8
 
 # Import shoreline validation
 from shoreline_validator import load_shoreline_models, is_shoreline
@@ -45,8 +46,10 @@ os.makedirs(app.config['RESULT_FOLDER'], exist_ok=True)
 # Load models
 U_net_model = load_U_net_model()
 DeepLab_model, deeplab_device = load_Deeplab_model()
-Segnet_model = load_Segnet_model()
-FCN8_model = load_FCN8_model()
+# Comment out SegNet model loading - not using this model anymore
+# Segnet_model = load_Segnet_model()
+# Comment out FCN8 model loading - not using this model anymore
+# FCN8_model = load_FCN8_model()
 
 # Load shoreline validation models
 try:
@@ -61,6 +64,12 @@ uploaded_files_cache = {}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+
+
+
+
 
 def compare_segmentations(image1_path, image2_path):
     """
@@ -94,6 +103,12 @@ def compare_segmentations(image1_path, image2_path):
     print(f"SSIM: {score}, IoU: {iou}, Similar: {is_similar}")
     
     return is_similar
+
+
+
+
+
+
 
 @app.route('/upload', methods=['POST'])
 def upload_files():
@@ -158,6 +173,9 @@ def upload_files():
 
 
 
+
+
+
 @app.route('/validate-shoreline', methods=['POST'])
 def validate_shoreline():
     """
@@ -181,9 +199,9 @@ def validate_shoreline():
     file_names = file_info['file_names']
     
     validation_results = []
+    non_shoreline_images = []
     
     for i, (image_path, image_name) in enumerate(zip(file_paths, file_names)):
-        # Basic image validation
         img = cv2.imread(image_path)
         if img is None:
             return jsonify({
@@ -197,36 +215,53 @@ def validate_shoreline():
                 'invalidImage': image_name
             }), 400
         
-        # Shoreline validation if available
         if shoreline_validation_available:
             is_shore = is_shoreline(image_path)
+            
             validation_results.append({
                 'filename': image_name,
                 'contains_shoreline': str(is_shore)
             })
             
             if not is_shore:
-                return jsonify({
-                    'error': f'Image {image_name} does not appear to contain a shoreline. Please upload satellite images of coastal areas.',
-                    'invalidImage': image_name
-                }), 400
+                non_shoreline_images.append(image_name)
         else:
             validation_results.append({
                 'filename': image_name,
                 'contains_shoreline': 'true'
             })
     
+    if non_shoreline_images:
+        if len(non_shoreline_images) == 1:
+            return jsonify({
+                'error': f'Image {non_shoreline_images[0]} does not appear to contain a shoreline. Please upload satellite images of coastal areas.',
+                'invalidImage': non_shoreline_images[0],
+                'validationResults': validation_results
+            }), 400
+        else:
+            image_list = ", ".join(non_shoreline_images)
+            return jsonify({
+                'error': f'The following images do not appear to contain shorelines: {image_list}. Please upload satellite images of coastal areas.',
+                'invalidImages': non_shoreline_images,
+                'validationResults': validation_results
+            }), 400
+    
     # All images passed validation
     uploaded_files_cache[upload_id]['validation_results'] = validation_results
     uploaded_files_cache[upload_id]['state'] = 'validated'
     
     return jsonify({
-        'message': 'Shoreline validation completed',
+        'message': 'Shoreline validation completed successfully',
         'fileId': upload_id,
         'validationResults': validation_results,
         'step': 0.5,
         'next': '/preprocess'
     }), 200
+
+
+
+
+
 
 @app.route('/preprocess', methods=['POST'])
 def preprocess_images():
@@ -250,11 +285,13 @@ def preprocess_images():
     file_paths = file_info['file_paths']
     file_names = file_info['file_names']
     
-    uploaded_files_cache[upload_id]['preprocessed_images'] = []
-    
-    for i, (image_path, image_name) in enumerate(zip(file_paths, file_names)):
-        # If we already validated, we can skip basic validation checks
-        if file_info.get('state') != 'validated':
+    # If we haven't validated yet, do it now
+    if file_info.get('state') != 'validated' and shoreline_validation_available:
+        non_shoreline_images = []
+        validation_results = []
+        
+        # First check all images for basic validation and shoreline detection
+        for image_path, image_name in zip(file_paths, file_names):
             # Basic image validation
             img = cv2.imread(image_path)
             if img is None:
@@ -269,27 +306,46 @@ def preprocess_images():
                     'invalidImage': image_name
                 }), 400
             
-            # Shoreline validation if available
-            if shoreline_validation_available:
-                if not is_shoreline(image_path):
-                    return jsonify({
-                        'error': f'Image {image_name} does not appear to contain a shoreline. Please upload satellite images of coastal areas.',
-                        'invalidImage': image_name
-                    }), 400
+            # Check if it's a shoreline
+            is_shore = is_shoreline(image_path)
+            validation_results.append({
+                'filename': image_name,
+                'contains_shoreline': str(is_shore)
+            })
+            
+            if not is_shore:
+                non_shoreline_images.append(image_name)
         
-        # Process with each model's preprocessing function
+        # If any images failed validation, return error with details
+        if non_shoreline_images:
+            if len(non_shoreline_images) == 1:
+                return jsonify({
+                    'error': f'Image {non_shoreline_images[0]} does not appear to contain a shoreline. Please upload satellite images of coastal areas.',
+                    'invalidImage': non_shoreline_images[0],
+                    'validationResults': validation_results
+                }), 400
+            else:
+                # Multiple non-shoreline images detected
+                image_list = ", ".join(non_shoreline_images)
+                return jsonify({
+                    'error': f'The following images do not appear to contain shorelines: {image_list}. Please upload satellite images of coastal areas.',
+                    'invalidImages': non_shoreline_images,
+                    'validationResults': validation_results
+                }), 400
+        
+        # All images passed validation, update cache
+        uploaded_files_cache[upload_id]['validation_results'] = validation_results
+    
+    # Now proceed with preprocessing
+    uploaded_files_cache[upload_id]['preprocessed_images'] = []
+    
+    for i, (image_path, image_name) in enumerate(zip(file_paths, file_names)):
         try:
             # Preprocess for U-Net
             unet_processed = U_net_preprocess_image(image_path)
             
             # Preprocess for DeepLabV3
             deeplab_processed = preprocesss_deeplabv3(image_path, deeplab_device)
-            
-            # Preprocess for SegNet
-            segnet_processed = load_and_preprocess_image(image_path)
-            
-            # Preprocess for FCN8
-            fcn8_processed = preprocess_image(image_path)
             
             # Store all the preprocessed images
             uploaded_files_cache[upload_id]['preprocessed_images'].append({
@@ -298,8 +354,6 @@ def preprocess_images():
                 'index': i,
                 'unet_processed': unet_processed,
                 'deeplab_processed': deeplab_processed,
-                'segnet_processed': segnet_processed,
-                'fcn8_processed': fcn8_processed
             })
         except Exception as e:
             return jsonify({
@@ -315,6 +369,11 @@ def preprocess_images():
         'step': 1,
         'next': '/create-masks'
     }), 200
+
+
+
+
+
 
 @app.route('/create-masks', methods=['POST'])
 def create_masks():
@@ -336,11 +395,14 @@ def create_masks():
     
     preprocessed_images = file_info['preprocessed_images']
     
-    result_paths = {'U-Net': {}, 'DeepLab': {}, 'SegNet': {}, 'FCN8': {}}
+    # Remove SegNet and FCN8 from result paths
+    result_paths = {'U-Net': {}, 'DeepLab': {}}  # SegNet and FCN8 removed
     unet_paths = []
     deeplab_paths = []
-    segnet_paths = []
-    fcn8_paths = []
+    # Comment out SegNet paths - not using this model anymore
+    # segnet_paths = []
+    # Comment out FCN8 paths - not using this model anymore
+    # fcn8_paths = []
     
     for i, image_info in enumerate(preprocessed_images):
         image_path = image_info['original_path']
@@ -350,8 +412,10 @@ def create_masks():
             # Use the preprocessed images directly from the cache
             unet_processed = image_info['unet_processed']
             deeplab_processed = image_info['deeplab_processed']
-            segnet_processed = image_info['segnet_processed'] 
-            fcn8_processed = image_info['fcn8_processed']
+            # Comment out SegNet processed - not using this model anymore
+            # segnet_processed = image_info['segnet_processed'] 
+            # Comment out FCN8 processed - not using this model anymore
+            # fcn8_processed = image_info['fcn8_processed']
             
             # U-Net prediction
             outputs_unet = U_net_predict(unet_processed, U_net_model)
@@ -375,19 +439,21 @@ def create_masks():
             deeplab_paths.append(deeplab_result_path)
             result_paths['DeepLab'][f'image_{i+1}'] = f"/result/{deeplab_filename}"
             
+            # Comment out SegNet prediction
             # SegNet prediction
-            segnet_filename = f"SegNet_segmented_{i+1}_{image_name}"
-            segnet_result_path = os.path.join(app.config['RESULT_FOLDER'], segnet_filename)
-            run_segnet(segnet_processed, Segnet_model, segnet_result_path)
-            segnet_paths.append(segnet_result_path)
-            result_paths['SegNet'][f'image_{i+1}'] = f"/result/{segnet_filename}"
+            # segnet_filename = f"SegNet_segmented_{i+1}_{image_name}"
+            # segnet_result_path = os.path.join(app.config['RESULT_FOLDER'], segnet_filename)
+            # run_segnet(segnet_processed, Segnet_model, segnet_result_path)
+            # segnet_paths.append(segnet_result_path)
+            # result_paths['SegNet'][f'image_{i+1}'] = f"/result/{segnet_filename}"
             
+            # Comment out FCN8 prediction - not using this model anymore
             # FCN8 prediction
-            fcn8_filename = f"FCN8_segmented_{i+1}_{image_name}"
-            fcn8_result_path = os.path.join(app.config['RESULT_FOLDER'], fcn8_filename)
-            run_FCN8(fcn8_processed, FCN8_model, fcn8_result_path)
-            fcn8_paths.append(fcn8_result_path)
-            result_paths['FCN8'][f'image_{i+1}'] = f"/result/{fcn8_filename}"
+            # fcn8_filename = f"FCN8_segmented_{i+1}_{image_name}"
+            # fcn8_result_path = os.path.join(app.config['RESULT_FOLDER'], fcn8_filename)
+            # run_FCN8(fcn8_processed, FCN8_model, fcn8_result_path)
+            # fcn8_paths.append(fcn8_result_path)
+            # result_paths['FCN8'][f'image_{i+1}'] = f"/result/{fcn8_filename}"
             
         except Exception as e:
             return jsonify({
@@ -399,8 +465,10 @@ def create_masks():
         'result_paths': result_paths,
         'unet_paths': unet_paths,
         'deeplab_paths': deeplab_paths,
-        'segnet_paths': segnet_paths,
-        'fcn8_paths': fcn8_paths
+        # Comment out SegNet paths - not using this model anymore
+        # 'segnet_paths': segnet_paths
+        # Comment out FCN8 paths - not using this model anymore
+        # 'fcn8_paths': fcn8_paths
     }
     
     uploaded_files_cache[upload_id]['state'] = 'shorelines_detected'
@@ -411,6 +479,10 @@ def create_masks():
         'step': 2,
         'next': '/compare-segmentations'
     }), 200
+
+
+
+
 
 @app.route('/compare-segmentations', methods=['POST'])
 def compare_segmentations_endpoint():
@@ -461,6 +533,10 @@ def compare_segmentations_endpoint():
         'next': '/measure-changes'
     }), 200
 
+
+
+
+
 @app.route('/measure-changes', methods=['POST'])
 def measure_changes():
     """
@@ -492,8 +568,10 @@ def measure_changes():
     # Get paths for the mask images
     unet_paths = processed_info['unet_paths']
     deeplab_paths = processed_info['deeplab_paths']
-    segnet_paths = processed_info['segnet_paths']
-    fcn8_paths = processed_info['fcn8_paths']
+    # Comment out SegNet paths - not using this model anymore
+    # segnet_paths = processed_info['segnet_paths']
+    # Comment out FCN8 paths - not using this model anymore
+    # fcn8_paths = processed_info['fcn8_paths']
     
     # If we haven't verified the images are similar, do it now
     if file_info.get('state') != 'compared' and len(unet_paths) >= 2:
@@ -509,10 +587,9 @@ def measure_changes():
     
     try:
         # For U-Net analysis
-        # Extract the preprocessed images for U-Net
         unet_img1 = preprocessed_images[0]['unet_processed']
         unet_img2 = preprocessed_images[1]['unet_processed']
-        
+
         # Convert preprocessed tensors/arrays back to usable images if necessary
         # This depends on how your preprocessing function works
         # You might need to denormalize or reformat the preprocessed data
@@ -530,12 +607,10 @@ def measure_changes():
             deeplab_img2 = preprocessed_images[1]['deeplab_processed']
             
             # Resize the DeepLab images to 540x540 pixels
-            # if isinstance(deeplab_img1, np.ndarray):
             deeplab_img1 = cv2.resize(deeplab_img1, (540, 540))
-            # if isinstance(deeplab_img2, np.ndarray):
             deeplab_img2 = cv2.resize(deeplab_img2, (540, 540))
             
-            print(f"Resized DeepLab images to 540x540 pixels for analysis")
+            print(f"\nResized DeepLab images to 540x540 pixels for analysis\n")
             
             stats_deeplab = run_shoreline_analysis(
                 deeplab_paths[0], deeplab_paths[1], 
@@ -551,43 +626,45 @@ def measure_changes():
             print(f"DeepLab analysis failed: {str(e)}")
             models_data.append(get_fallback_data("DeepLab v3"))
         
-        try:
-            # For SegNet analysis
-            segnet_img1 = preprocessed_images[0]['segnet_processed']
-            segnet_img2 = preprocessed_images[1]['segnet_processed']
+        # Comment out SegNet analysis
+        # try:
+        #     # For SegNet analysis
+        #     segnet_img1 = preprocessed_images[0]['segnet_processed']
+        #     segnet_img2 = preprocessed_images[1]['segnet_processed']
+        #     
+        #     stats_segnet = run_shoreline_analysis(
+        #         segnet_paths[0], segnet_paths[1], 
+        #         segnet_img1, segnet_img2, 
+        #         "SegNet"
+        #     )
+        #     models_data.append({
+        #         'model_name': "SegNet",
+        #         'EPR': round(stats_segnet["avg_epr"], 2),
+        #         'NSM': round(stats_segnet["avg_nsm"], 2)
+        #     })
+        # except Exception as e:
+        #     print(f"SegNet analysis failed: {str(e)}")
+        #     models_data.append(get_fallback_data("SegNet"))
             
-            stats_segnet = run_shoreline_analysis(
-                segnet_paths[0], segnet_paths[1], 
-                segnet_img1, segnet_img2, 
-                "SegNet"
-            )
-            models_data.append({
-                'model_name': "SegNet",
-                'EPR': round(stats_segnet["avg_epr"], 2),
-                'NSM': round(stats_segnet["avg_nsm"], 2)
-            })
-        except Exception as e:
-            print(f"SegNet analysis failed: {str(e)}")
-            models_data.append(get_fallback_data("SegNet"))
-            
-        try:
-            # For FCN8 analysis
-            fcn8_img1 = preprocessed_images[0]['fcn8_processed']
-            fcn8_img2 = preprocessed_images[1]['fcn8_processed']
-            
-            stats_fcn8 = run_shoreline_analysis(
-                fcn8_paths[0], fcn8_paths[1], 
-                fcn8_img1, fcn8_img2, 
-                "FCN8"
-            )
-            models_data.append({
-                'model_name': "FCN8",
-                'EPR': round(stats_fcn8["avg_epr"], 2),
-                'NSM': round(stats_fcn8["avg_nsm"], 2)
-            })
-        except Exception as e:
-            print(f"FCN8 analysis failed: {str(e)}")
-            models_data.append(get_fallback_data("FCN8"))
+        # Comment out FCN8 analysis - not using this model anymore
+        # try:
+        #     # For FCN8 analysis
+        #     fcn8_img1 = preprocessed_images[0]['fcn8_processed']
+        #     fcn8_img2 = preprocessed_images[1]['fcn8_processed']
+        #     
+        #     stats_fcn8 = run_shoreline_analysis(
+        #         fcn8_paths[0], fcn8_paths[1], 
+        #         fcn8_img1, fcn8_img2, 
+        #         "FCN8"
+        #     )
+        #     models_data.append({
+        #         'model_name': "FCN8",
+        #         'EPR': round(stats_fcn8["avg_epr"], 2),
+        #         'NSM': round(stats_fcn8["avg_nsm"], 2)
+        #     })
+        # except Exception as e:
+        #     print(f"FCN8 analysis failed: {str(e)}")
+        #     models_data.append(get_fallback_data("FCN8"))
         
     except Exception as e:
         return jsonify({
@@ -605,13 +682,18 @@ def measure_changes():
         'next': '/generate-report'
     }), 200
 
+
+
+
 # Update the fallback data function to only include EPR and NSM
 def get_fallback_data(model_name):
     """Provide fallback data if a model analysis fails"""
     fallbacks = {
         "DeepLab v3": {"EPR": -1.32, "NSM": -16.2},
-        "SegNet": {"EPR": -1.18, "NSM": -14.7},
-        "FCN8": {"EPR": -1.25, "NSM": -15.5}
+        # Comment out SegNet fallback - not using this model anymore
+        # "SegNet": {"EPR": -1.18, "NSM": -14.7},
+        # Comment out FCN8 fallback - not using this model anymore
+        # "FCN8": {"EPR": -1.25, "NSM": -15.5}
     }
     data = fallbacks.get(model_name, {"EPR": -1.2, "NSM": -15.0})
     return {
@@ -620,10 +702,18 @@ def get_fallback_data(model_name):
         'NSM': data["NSM"]
     }
 
+
+
+
+
 @app.route('/result/<filename>', methods=['GET'])
 def get_result(filename):
     """Serve result images"""
     return send_file(os.path.join(app.config['RESULT_FOLDER'], filename), mimetype='image/png')
+
+
+
+
 
 @app.route('/api-info', methods=['GET'])
 def api_info():
@@ -632,6 +722,11 @@ def api_info():
         'status': 'online',
         'message': 'Shoreline Analysis API is running'
     }), 200
+
+
+
+
+
 
 @app.route('/download-results/<file_id>', methods=['GET'])
 def download_results(file_id):
@@ -693,34 +788,38 @@ def download_results(file_id):
                         zf.write(path, arcname=arcname)
                         print(f"Added DeepLab result: {arcname}")
             
+            # Comment out SegNet results
             # Add SegNet results
-            if 'segnet_paths' in result_paths:
-                print(f"Adding {len(result_paths['segnet_paths'])} SegNet segmentation images")
-                for i, (path, name) in enumerate(zip(result_paths['segnet_paths'], file_names)):
-                    if os.path.exists(path):
-                        arcname = f"results/segnet/SegNet_{i+1}_{name}"
-                        zf.write(path, arcname=arcname)
-                        print(f"Added SegNet result: {arcname}")
+            # if 'segnet_paths' in result_paths:
+            #     print(f"Adding {len(result_paths['segnet_paths'])} SegNet segmentation images")
+            #     for i, (path, name) in enumerate(zip(result_paths['segnet_paths'], file_names)):
+            #         if os.path.exists(path):
+            #             arcname = f"results/segnet/SegNet_{i+1}_{name}"
+            #             zf.write(path, arcname=arcname)
+            #             print(f"Added SegNet result: {arcname}")
             
+            # Comment out FCN8 results - not using this model anymore
             # Add FCN8 results
-            if 'fcn8_paths' in result_paths:
-                print(f"Adding {len(result_paths['fcn8_paths'])} FCN8 segmentation images")
-                for i, (path, name) in enumerate(zip(result_paths['fcn8_paths'], file_names)):
-                    if os.path.exists(path):
-                        arcname = f"results/fcn8/FCN8_{i+1}_{name}"
-                        zf.write(path, arcname=arcname)
-                        print(f"Added FCN8 result: {arcname}")
+            # if 'fcn8_paths' in result_paths:
+            #     print(f"Adding {len(result_paths['fcn8_paths'])} FCN8 segmentation images")
+            #     for i, (path, name) in enumerate(zip(result_paths['fcn8_paths'], file_names)):
+            #         if os.path.exists(path):
+            #             arcname = f"results/fcn8/FCN8_{i+1}_{name}"
+            #             zf.write(path, arcname=arcname)
+            #             print(f"Added FCN8 result: {arcname}")
         
-        # Check if length of paths and names matches
+        # Check for mismatches
         if 'processed' in file_info and 'file_names' in file_info:
             result_paths = file_info['processed']
             file_names = file_info['file_names']
             
             for model_name, model_paths in [
                 ('U-Net', result_paths.get('unet_paths', [])),
-                ('DeepLab', result_paths.get('deeplab_paths', [])),
-                ('SegNet', result_paths.get('segnet_paths', [])),
-                ('FCN8', result_paths.get('fcn8_paths', []))
+                ('DeepLab', result_paths.get('deeplab_paths', []))
+                # Comment out SegNet - not using this model anymore
+                # ('SegNet', result_paths.get('segnet_paths', []))
+                # Comment out FCN8 - not using this model anymore
+                # ('FCN8', result_paths.get('fcn8_paths', []))
             ]:
                 if len(model_paths) != len(file_names):
                     print(f"Warning: Mismatch between {model_name} result count ({len(model_paths)}) and original file count ({len(file_names)})")
@@ -735,8 +834,6 @@ def download_results(file_id):
         summary = create_summary_report(file_info)
         zf.writestr('summary.txt', summary)
         print("Added summary.txt")
-        
-
     
     # Reset file pointer
     memory_file.seek(0)
@@ -761,6 +858,10 @@ def download_results(file_id):
     
     print(f"Sending download response for {filename}")
     return response
+
+
+
+
 
 def create_summary_report(file_info):
     """Create a human-readable summary of the analysis results"""
@@ -805,18 +906,23 @@ def create_summary_report(file_info):
     
     return summary
 
+
+
+
+
 def clear_result_folders(session_id=None):
     """
     Clears the result folders when a new upload session starts.
     If session_id is provided, only deletes files from that specific session.
     """
-    # Define folders that need to be cleared
+# Define folders that need to be cleared
     result_folder = app.config['RESULT_FOLDER']
     analysis_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'analysis_results')
     
     folders_to_clean = [result_folder, analysis_folder]
     
     for folder in folders_to_clean:
+
         # Skip if the folder doesn't exist
         if not os.path.exists(folder):
             continue
@@ -829,6 +935,7 @@ def clear_result_folders(session_id=None):
                     if os.path.isfile(file_path):
                         os.unlink(file_path)
                     elif os.path.isdir(file_path):
+                        
                         # If there are subdirectories with results, clean them too
                         for subfile in os.listdir(file_path):
                             sub_path = os.path.join(file_path, subfile)
@@ -836,7 +943,6 @@ def clear_result_folders(session_id=None):
                                 os.unlink(sub_path)
                 except Exception as e:
                     print(f"Error deleting {file_path}: {e}")
-        # If session provided, only clear files from that session
         else:
             # Find files that match the session ID pattern
             for filename in os.listdir(folder):
@@ -849,6 +955,9 @@ def clear_result_folders(session_id=None):
                         print(f"Error deleting {file_path}: {e}")
     
     print(f"Result and analysis folders cleared for new upload")
+
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
