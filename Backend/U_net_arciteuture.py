@@ -96,18 +96,34 @@ def load_U_net_model():
 
     return model
 
-# Crop to square function 
+# # Crop to square function 
+# def crop_to_square(image):
+#     height, width = image.shape[:2]  # Get image dimensions
+#     min_dim = min(height, width)  # Find the shortest side
+
+#     # Calculate center crop box
+#     left = (width - min_dim) // 2
+#     top = (height - min_dim) // 2
+#     right = left + min_dim
+#     bottom = top + min_dim
+
+#     return image[top:bottom, left:right]  # Crop and return
+
+
 def crop_to_square(image):
-    height, width = image.shape[:2]  # Get image dimensions
-    min_dim = min(height, width)  # Find the shortest side
+    height, width = image.shape[:2]
+
+    # Ensure the image is at least 1024x1024
+    if height < 1024 or width < 1024:
+        raise ValueError("Image dimensions must be at least 1024x1024")
 
     # Calculate center crop box
-    left = (width - min_dim) // 2
-    top = (height - min_dim) // 2
-    right = left + min_dim
-    bottom = top + min_dim
+    left = (width - 1024) // 2
+    top = (height - 1024) // 2
+    right = left + 1024
+    bottom = top + 1024
 
-    return image[top:bottom, left:right]  # Crop and return
+    return image[top:bottom, left:right]
 
 
 def U_net_preprocess_image(image_path):
@@ -119,7 +135,7 @@ def U_net_preprocess_image(image_path):
 
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = crop_to_square(img)  # Assuming crop_to_square is defined elsewhere
-    img = cv2.resize(img, (512, 512))
+    # img = cv2.resize(img, (512, 512))
     return img 
 
 
