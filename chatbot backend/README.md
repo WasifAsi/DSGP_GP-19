@@ -144,13 +144,4 @@ To delete old model files:
 rasa delete model --model <model-name>
 ```
 
----
-
-## 🙋‍♀️ Maintainer
-
-Created and maintained by: **Your Name**  
-GitHub: [github.com/yourusername](https://github.com/yourusername)
-
----
-
 ## 🚀 Happy Chatting!
