@@ -476,16 +476,6 @@ const Upload = () => {
       
       toast.dismiss(loadingToast);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Server error:", errorText);
-        toast.error("Shoreline validation failed");
-        setError(`Server error: ${response.status} ${response.statusText}`);
-        setIsCancelled(true);
-        setProcessingStep(null);
-        return false;
-      }
-      
       let data;
       try {
         data = await response.json();
@@ -493,6 +483,35 @@ const Upload = () => {
         console.error("JSON parse error:", jsonError);
         toast.error("Error processing server response");
         setError('Error processing server response');
+        setIsCancelled(true);
+        setProcessingStep(null);
+        return false;
+      }
+      
+      // Handle the case where images aren't shorelines (returns 200 with warning)
+      if (data.isNonShoreline) {
+        toast.warning(data.warning || "Some images don't contain shorelines");
+        
+        if (data.invalidImage) {
+          const errorImgIndex = files.findIndex(
+            file => file.name === data.invalidImage
+          );
+          
+          if (errorImgIndex !== -1) {
+            setErrorIndex(errorImgIndex);
+          }
+        }
+        
+        setError(data.warning || 'Some uploaded images are not shorelines');
+        setIsCancelled(true);
+        setProcessingStep(null);
+        return false;
+      }
+      
+      // Regular error handling for actual errors (400 responses)
+      if (!response.ok) {
+        toast.error("Shoreline validation failed");
+        setError(data.error || `Server error: ${response.status}`);
         setIsCancelled(true);
         setProcessingStep(null);
         return false;

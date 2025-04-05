@@ -233,18 +233,24 @@ def validate_shoreline():
     
     if non_shoreline_images:
         if len(non_shoreline_images) == 1:
+            # Changed to return 200 OK with identified non-shoreline images instead of 400 error
             return jsonify({
-                'error': f'Image {non_shoreline_images[0]} does not appear to contain a shoreline. Please upload satellite images of coastal areas.',
+                'warning': f'Image {non_shoreline_images[0]} does not appear to contain a shoreline. Please upload satellite images of coastal areas.',
                 'invalidImage': non_shoreline_images[0],
-                'validationResults': validation_results
-            }), 400
+                'validationResults': validation_results,
+                'isNonShoreline': True,
+                'nonShorelineImages': non_shoreline_images
+            }), 200  # Return 200 OK with warning
         else:
             image_list = ", ".join(non_shoreline_images)
+            # Changed to return 200 OK with identified non-shoreline images instead of 400 error
             return jsonify({
-                'error': f'The following images do not appear to contain shorelines: {image_list}. Please upload satellite images of coastal areas.',
+                'warning': f'The following images do not appear to contain shorelines: {image_list}. Please upload satellite images of coastal areas.',
                 'invalidImages': non_shoreline_images,
-                'validationResults': validation_results
-            }), 400
+                'validationResults': validation_results,
+                'isNonShoreline': True,
+                'nonShorelineImages': non_shoreline_images
+            }), 200  # Return 200 OK with warning
     
     # All images passed validation
     uploaded_files_cache[upload_id]['validation_results'] = validation_results
