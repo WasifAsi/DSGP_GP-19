@@ -227,7 +227,142 @@ def get_shoreline_points(predict):
              return np.array([])
 
          return shoreline_points
-
+def create_shoreline_calculation_demo(shoreline1, shoreline2, transects, intersection_points1, 
+                                     intersection_points2, nsm_values, model_dir, n_transects=5):
+    """
+    Create a simplified demonstration image showing how shoreline change is calculated
+    using a small number of representative transects.
+    
+    Parameters:
+    -----------
+    shoreline1, shoreline2 : numpy arrays
+        Points defining the shorelines
+    transects : list of tuples
+        List of (start_point, end_point) defining transects
+    intersection_points1, intersection_points2 : lists
+        Intersection points between transects and shorelines
+    nsm_values : numpy array
+        Net Shoreline Movement values
+    model_dir : str
+        Directory to save the output image
+    n_transects : int
+        Number of transects to show in the demo
+    """
+    # Create a blank image with black background
+    img_size = (800, 800, 3)
+    demo_img = np.zeros(img_size, dtype=np.uint8)
+    
+    # Select evenly spaced transects for the demo
+    if len(transects) > n_transects:
+        indices = np.linspace(0, len(transects) - 1, n_transects, dtype=int)
+        demo_transects = [transects[i] for i in indices]
+        demo_intersections1 = [intersection_points1[i] for i in indices]
+        demo_intersections2 = [intersection_points2[i] for i in indices]
+        demo_nsm = [nsm_values[i] for i in indices]
+    else:
+        demo_transects = transects
+        demo_intersections1 = intersection_points1
+        demo_intersections2 = intersection_points2
+        demo_nsm = nsm_values
+    
+    # Draw shorelines
+    # Convert to image coordinates (may need adjustment based on your data scale)
+    shoreline1_img = np.array([(min(y, img_size[0]-1), min(x, img_size[1]-1)) 
+                               for y, x in shoreline1.astype(int)])
+    shoreline2_img = np.array([(min(y, img_size[0]-1), min(x, img_size[1]-1)) 
+                               for y, x in shoreline2.astype(int)])
+    
+    # Draw first shoreline in red
+    for i in range(1, len(shoreline1_img)):
+        pt1 = (shoreline1_img[i-1][1], shoreline1_img[i-1][0])
+        pt2 = (shoreline1_img[i][1], shoreline1_img[i][0])
+        cv2.line(demo_img, pt1, pt2, (0, 0, 255), 2)  # Red
+    
+    # Draw second shoreline in blue
+    for i in range(1, len(shoreline2_img)):
+        pt1 = (shoreline2_img[i-1][1], shoreline2_img[i-1][0])
+        pt2 = (shoreline2_img[i][1], shoreline2_img[i][0])
+        cv2.line(demo_img, pt1, pt2, (255, 0, 0), 2)  # Blue
+    
+    # Draw transects and measurements
+    for i, (transect, p1, p2, nsm) in enumerate(zip(
+            demo_transects, demo_intersections1, demo_intersections2, demo_nsm)):
+        
+        # Draw transect line
+        start = (int(min(transect[0][1], img_size[1]-1)), int(min(transect[0][0], img_size[0]-1)))
+        end = (int(min(transect[1][1], img_size[1]-1)), int(min(transect[1][0], img_size[0]-1)))
+        cv2.line(demo_img, start, end, (255, 255, 255), 1)
+        
+        # Draw intersection points
+        p1_pt = (int(min(p1[1], img_size[1]-1)), int(min(p1[0], img_size[0]-1)))
+        p2_pt = (int(min(p2[1], img_size[1]-1)), int(min(p2[0], img_size[0]-1)))
+        cv2.circle(demo_img, p1_pt, 5, (0, 255, 255), -1)  # Yellow for first intersection
+        cv2.circle(demo_img, p2_pt, 5, (255, 255, 0), -1)  # Cyan for second intersection
+        
+        # Draw measurement line
+        if nsm > 0:  # Accretion
+            color = (0, 255, 0)  # Green
+        else:  # Erosion
+            color = (0, 0, 255)  # Red
+        cv2.line(demo_img, p1_pt, p2_pt, color, 2)
+        
+        # Add measurement text
+        mid_x = int((p1_pt[0] + p2_pt[0]) / 2)
+        mid_y = int((p1_pt[1] + p2_pt[1]) / 2)
+        text = f"{abs(nsm):.1f}m"
+        
+        # Add background for text
+        (text_width, text_height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        cv2.rectangle(demo_img, 
+                     (mid_x - text_width//2 - 5, mid_y - text_height - 5),
+                     (mid_x + text_width//2 + 5, mid_y + 5),
+                     (0, 0, 0), -1)
+        
+        # Add text
+        cv2.putText(demo_img, text, (mid_x - text_width//2, mid_y), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        
+        # Add transect number
+        cv2.putText(demo_img, f"T{i+1}", start, 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 1)
+    
+    # Add legend
+    legend_y = 30
+    cv2.putText(demo_img, "Red: Initial Shoreline", (20, legend_y), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    cv2.putText(demo_img, "Blue: Final Shoreline", (20, legend_y + 30), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+    cv2.putText(demo_img, "White: Transect Lines", (20, legend_y + 60), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    cv2.putText(demo_img, "Green: Accretion", (20, legend_y + 90), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    cv2.putText(demo_img, "Red: Erosion", (20, legend_y + 120), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    
+    # Add title
+    title = "Shoreline Change Calculation Demo"
+    cv2.putText(demo_img, title, (img_size[1]//2 - 200, 30), 
+                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+    
+    # Add explanation
+    explanation = [
+        "Shoreline change is measured along transects (white lines)",
+        "perpendicular to the shoreline. The distance between",
+        "intersection points is the Net Shoreline Movement (NSM).",
+        "Green indicates accretion (shoreline advance).",
+        "Red indicates erosion (shoreline retreat)."
+    ]
+    
+    for i, line in enumerate(explanation):
+        cv2.putText(demo_img, line, (20, img_size[0] - 120 + i*25), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
+    
+    # Save the demo image
+    output_path = os.path.join(model_dir, "shoreline_calculation_demo.png")
+    cv2.imwrite(output_path, demo_img)
+    print(f"Demo visualization saved to {output_path}")
+    
+    return demo_img
 def order_shoreline_points(points, max_gap=10000):
     if len(points) == 0:
         return np.array([])
@@ -1449,7 +1584,13 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
             stats["max_epr"] = 0
             stats["min_epr"] = 0
             stats["std_epr"] = 0
-        
+        # Create a simplified demo visualization
+        if len(valid_transects) > 0:  # Only create demo if we have valid transects
+            create_shoreline_calculation_demo(
+                shoreline1, shoreline2, valid_transects, 
+                intersection_points1, intersection_points2, nsm_values, 
+                model_dir, n_transects=5  # Show just 5 transects for clarity
+            )
         # Close all matplotlib figures to prevent memory leaks
         plt.close('all')
         
