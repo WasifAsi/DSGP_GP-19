@@ -23,7 +23,6 @@ const TeamMember = ({ name, title, affiliation, description, imageSrc, delay = 0
     >
       <div className="flex flex-col items-center text-center">
 
-
       <div className="relative w-24 h-24 mb-4 overflow-hidden rounded-full border-2 border-shoreline-blue/10 dark:border-shoreline-blue/20">
         <img
         src={imageSrc}
