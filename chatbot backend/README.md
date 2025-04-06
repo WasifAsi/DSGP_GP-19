@@ -28,6 +28,11 @@ pip install --upgrade pip
 pip3 install uv
 uv pip install rasa-pro
 ```
+GET the rasa pro key in the rasa web site for free
+
+then add that as     $env:RASA_PRO_LICENSE="<key>"
+
+
 
 > If installation fails, try:  
 > `pip install rasa==3.6.10`
@@ -68,7 +73,7 @@ rasa run actions
 In another terminal:
 
 ```bash
-rasa run --enable-api --cors "*" --debug
+rasa run --enable-api --cors "*" --debug                          # reun this to connect with the frond end
 ```
 
 ---

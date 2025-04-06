@@ -7,8 +7,31 @@ This project focuses on analyzing shoreline changes using satellite imagery and 
 - **Deep Learning-Based Segmentation**: Utilizes models such as DeepLabV3 to generate binary masks of shorelines.
 - **Shoreline Change Calculation**: Computes EPR and NSM directly from binary masks without relying on ArcGIS or other GIS tools.
 - **Heavy Data Augmentation**: Enhances training datasets to improve model performance.
-- **Comparison of Models**: Evaluates multiple deep learning architectures (e.g., U-Net, CNN, DeepLabV3) for shoreline segmentation.
-- **Webpage Visualization**: Displays shoreline change results through an interactive web interface.
+- **Interactive Web Interface**: A React-based frontend that allows users to upload and analyze images.
+- **Flask Backend API**: Processes images and runs the analysis pipeline.
+- **AI Chatbot Assistant**: Answers questions about shoreline erosion and coastal management.
+
+## System Architecture
+
+### Frontend
+- Built with React and TypeScript
+- Features a responsive, user-friendly interface
+- Provides step-by-step visualization of the analysis process
+- Allows users to upload exactly 2 satellite images for comparison
+- Displays analysis results with downloadable reports
+
+### Backend
+- Flask API that handles image processing and analysis
+- Integrates multiple deep learning models for shoreline detection
+- Calculates shoreline change metrics (EPR and NSM)
+- Generates comprehensive analysis reports
+- Returns visualization data for the frontend
+
+### Chatbot
+- Built using a rasa
+- Provides information about shoreline erosion, coastal management, and climate change impacts
+- Assists users in understanding analysis results
+- Offers recommendations based on shoreline change data
 
 ## Methodology
 1. **Data Preprocessing**
@@ -28,31 +51,30 @@ This project focuses on analyzing shoreline changes using satellite imagery and 
    - Display results in a user-friendly webpage.
    - Compare different model performances.
 
-## Installation & Dependencies
-```bash
-# Clone the repository
-git clone https://github.com/your-repo-name.git
-cd shoreline-analysis
 
-# Install dependencies
-pip install -r requirements.txt
+
+
+# Clone the repository
+git clone https://github.com/WasifAsi/DSGP_GP-19.git 
 ```
 
-## Usage
-1. **Train the Model**
-   ```bash
-   python train.py --model deeplabv3 --epochs 50 --batch_size 6
-   ```
-2. **Generate Binary Masks**
-   ```bash
-   python predict.py --input data/test_images --output results/masks
-   ```
-3. **Calculate Shoreline Change**
-   ```bash
-   python calculate_change.py --masks results/masks --output results/shoreline_metrics.csv
-   ```
-4. **Visualize Results**
-   - Run the webpage visualization tool (instructions to be added based on implementation).
+## Project Structure
+shoreline-analysis/
+├── Backend/
+│   ├── [Flask_connection.py]       # Main Flask API
+│   ├── U_net_arciteuture.py        # U-Net model implementation
+│   ├── deepLabV3_architecture.py   # DeepLabV3 model implementation
+│   ├── EPR_NSM_calculation.py      # Shoreline change calculations
+│   ├── shoreline_validator.py      # Validates shoreline presence
+│   
+├── frontend/
+│   ├── src/
+│   │   ├── components/             # React components
+│   │   ├── pages/                  # Application pages
+│   │   └── App.tsx                 # Main application component
+│   ├── [package.json]              # Frontend dependencies
+│   └── vite.config.ts              # Vite configuration
+└── [README.md]                     # Project documentation
 
 ## Contributors
 - Kalhara
@@ -60,9 +82,6 @@ pip install -r requirements.txt
 - Ravisha
 - Praveen
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
 
----
-For more information, contact us or open an issue in the repository.
+This updated README now includes detailed information about your frontend, backend, and chatbot components, as well as more comprehensive setup and usage instructions. Let me know if you'd like me to make any adjustments to this content!
 
