@@ -1,186 +1,148 @@
 version: "3.1"
 
 stories:
-- story: happy path
-  steps:
-  - intent: greet
-  - action: utter_greet
-  - intent: mood_great
-  - action: utter_happy
 
-- story: sad path 1
+# Generic user paths
+- story: user greets happily
   steps:
-  - intent: greet
-  - action: utter_greet
-  - intent: mood_unhappy
-  - action: utter_cheer_up
-  - action: utter_did_that_help
-  - intent: affirm
-  - action: utter_happy
+    - intent: greet
+    - action: utter_greet
+    - intent: mood_great
+    - action: utter_happy
 
-- story: sad path 2
+- story: user is sad
   steps:
-  - intent: greet
-  - action: utter_greet
-  - intent: mood_unhappy
-  - action: utter_cheer_up
-  - action: utter_did_that_help
-  - intent: deny
-  - action: utter_goodbye
+    - intent: greet
+    - action: utter_greet
+    - intent: mood_unhappy
+    - action: utter_cheer_up
+    - action: utter_did_that_help
+    - intent: affirm
+    - action: utter_happy
 
-# Shoreline knowledge stories
-- story: explain shoreline analysis
+- story: user is still sad
   steps:
-  - intent: explain_shoreline_analysis
-  - action: utter_explain_shoreline_analysis
+    - intent: greet
+    - action: utter_greet
+    - intent: mood_unhappy
+    - action: utter_cheer_up
+    - action: utter_did_that_help
+    - intent: deny
+    - action: utter_goodbye
 
-- story: importance of shoreline analysis
+# Bot challenge
+- story: user challenges the bot
   steps:
-  - intent: importance_of_shoreline_analysis
-  - action: utter_importance_of_shoreline_analysis
+    - intent: bot_challenge
+    - action: utter_iamabot
 
-- story: tools for shoreline analysis
+# --- Shoreline Analysis Q&A ---
+- story: shoreline analysis topics
   steps:
-  - intent: tools_for_shoreline_analysis
-  - action: utter_tools_used
+    - intent: explain_shoreline_analysis
+    - action: utter_explain_shoreline_analysis
+    - intent: importance_of_shoreline_analysis
+    - action: utter_importance_of_shoreline_analysis
+    - intent: tools_for_shoreline_analysis
+    - action: utter_tools_used
 
-- story: define coastal erosion
+- story: erosion and change detection
   steps:
-  - intent: define_coastal_erosion
-  - action: utter_coastal_erosion
+    - intent: define_coastal_erosion
+    - action: utter_coastal_erosion
+    - intent: show_example_shoreline_change
+    - action: utter_example_shoreline_change
+    - intent: calculate_shoreline_change
+    - action: utter_calculate_change
+    - intent: causes_of_shoreline_change
+    - action: utter_causes_change
 
-- story: show example of shoreline change
+- story: DSAS and components
   steps:
-  - intent: show_example_shoreline_change
-  - action: utter_example_shoreline_change
+    - intent: what_is_dsas
+    - action: utter_explain_dsas
+    - intent: erosion_vs_accretion
+    - action: utter_diff_erosion_accretion
+    - intent: explain_baseline
+    - action: utter_baseline
+    - intent: explain_transects
+    - action: utter_transects
 
-- story: calculate shoreline change
+- story: sea level and prevention
   steps:
-  - intent: calculate_shoreline_change
-  - action: utter_calculate_change
+    - intent: sea_level_rise_effect
+    - action: utter_sea_level_rise
+    - intent: prevent_coastal_erosion
+    - action: utter_prevent_erosion
 
-- story: causes of shoreline change
+- story: data and visualization
   steps:
-  - intent: causes_of_shoreline_change
-  - action: utter_causes_change
+    - intent: required_datasets
+    - action: utter_required_datasets
+    - intent: explain_shoreline_retreat
+    - action: utter_shoreline_retreat
+    - intent: visualize_shoreline_change
+    - action: utter_visualize_change
 
-- story: what is DSAS
+- story: mapping and tools
   steps:
-  - intent: what_is_dsas
-  - action: utter_explain_dsas
+    - intent: define_coastal_vulnerability
+    - action: utter_coastal_vulnerability
+    - intent: explain_shapefile
+    - action: utter_shapefile
+    - intent: natural_methods_protection
+    - action: utter_natural_methods
+    - intent: use_qgis
+    - action: utter_use_qgis
 
-- story: erosion vs accretion
+# --- NSM / EPR metrics ---
+- story: NSM and EPR overview
   steps:
-  - intent: erosion_vs_accretion
-  - action: utter_diff_erosion_accretion
+    - intent: ask_nsm
+    - action: utter_explain_nsm
+    - action: utter_calculate_nsm
+    - intent: ask_epr
+    - action: utter_explain_epr
+    - action: utter_calculate_epr
+    - intent: ask_nsm_epr_difference
+    - action: utter_nsm_epr_difference
 
-- story: explain shoreline baseline
+- story: NSM method and usefulness
   steps:
-  - intent: explain_baseline
-  - action: utter_baseline
+    - intent: ask_shoreline_change_method
+    - action: utter_shoreline_change_method
+    - action: utter_predict_shoreline_movement
+    - intent: ask_why_use_nsm_epr
+    - action: utter_why_use_nsm_epr
 
-- story: sea level rise effect
+- story: NSM details
   steps:
-  - intent: sea_level_rise_effect
-  - action: utter_sea_level_rise
+    - intent: ask_units_and_scale
+    - action: utter_units_and_scale
+    - intent: ask_accuracy_factors
+    - action: utter_accuracy_factors
+    - intent: ask_transect_explanation
+    - action: utter_transect_explanation
+    - intent: ask_positive_negative_meaning
+    - action: utter_positive_negative_meaning
+    - intent: ask_how_many_transects
+    - action: utter_how_many_transects
+    - intent: ask_erosion_accretion_stats
+    - action: utter_erosion_accretion_stats
 
-- story: prevent coastal erosion
+# --- Deep Learning Models Q&A ---
+- story: model explanations
   steps:
-  - intent: prevent_coastal_erosion
-  - action: utter_prevent_erosion
+    - intent: ask_unet
+    - action: utter_explain_unet
+    - intent: ask_segnet
+    - action: utter_explain_segnet
+    - intent: ask_deeplabv3
+    - action: utter_explain_deeplabv3
+    - intent: ask_fcn8
+    - action: utter_explain_fcn8
 
-- story: explain transects
+- story: explain shoreline concept
   steps:
-  - intent: explain_transects
-  - action: utter_transects
-
-- story: required datasets
-  steps:
-  - intent: required_datasets
-  - action: utter_required_datasets
-
-- story: explain shoreline retreat
-  steps:
-  - intent: explain_shoreline_retreat
-  - action: utter_shoreline_retreat
-
-- story: visualize shoreline change
-  steps:
-  - intent: visualize_shoreline_change
-  - action: utter_visualize_change
-
-- story: define coastal vulnerability
-  steps:
-  - intent: define_coastal_vulnerability
-  - action: utter_coastal_vulnerability
-
-- story: explain shapefile
-  steps:
-  - intent: explain_shapefile
-  - action: utter_shapefile
-
-- story: natural methods of coastal protection
-  steps:
-  - intent: natural_methods_protection
-  - action: utter_natural_methods
-
-- story: use QGIS for shoreline analysis
-  steps:
-  - intent: use_qgis
-  - action: utter_use_qgis
-
-# NSM/EPR specific stories
-- story: explain NSM
-  steps:
-  - intent: ask_nsm
-  - action: utter_explain_nsm
-
-- story: explain EPR
-  steps:
-  - intent: ask_epr
-  - action: utter_explain_epr
-
-- story: compare NSM and EPR
-  steps:
-  - intent: ask_nsm_epr_difference
-  - action: utter_nsm_epr_difference
-
-- story: explain shoreline change method
-  steps:
-  - intent: ask_shoreline_change_method
-  - action: utter_shoreline_change_method
-
-- story: purpose of NSM/EPR
-  steps:
-  - intent: ask_why_use_nsm_epr
-  - action: utter_why_use_nsm_epr
-
-- story: unit and scaling
-  steps:
-  - intent: ask_units_and_scale
-  - action: utter_units_and_scale
-
-- story: accuracy factors
-  steps:
-  - intent: ask_accuracy_factors
-  - action: utter_accuracy_factors
-
-- story: explain transect purpose
-  steps:
-  - intent: ask_transect_explanation
-  - action: utter_transect_explanation
-
-- story: positive/negative meaning
-  steps:
-  - intent: ask_positive_negative_meaning
-  - action: utter_positive_negative_meaning
-
-- story: number of transects
-  steps:
-  - intent: ask_how_many_transects
-  - action: utter_how_many_transects
-
-- story: erosion/accretion statistics
-  steps:
-  - intent: ask_erosion_accretion_stats
-  - action: utter_erosion_accretion_stats
+    - intent: what_is_shoreline
+    - action: utter_what_is_shoreline
