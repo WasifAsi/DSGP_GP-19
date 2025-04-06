@@ -309,120 +309,10 @@ def generate_transects_from_baseline(baseline, sea_direction, num_transects=100,
     
     return transects
 
-# def generate_equally_spaced_transects(shoreline, spacing_meters=100, transect_length=100,
-#                                      sea_direction=None, pixel_to_meter=18.2):
-#     """
-#     Generate transects with more precise equal spacing along the shoreline.
-#     """
-#     if len(shoreline) < 2:
-#         print("Warning: Not enough shoreline points to generate transects")
-#         return []
 
-#     # Calculate the exact cumulative distances between all points
-#     cumulative_distances = np.zeros(len(shoreline))
-#     for i in range(1, len(shoreline)):
-#         # Calculate Euclidean distance between consecutive points
-#         distance = np.linalg.norm(shoreline[i] - shoreline[i-1])
-#         cumulative_distances[i] = cumulative_distances[i-1] + distance
-
-#     # Convert spacing from meters to pixels
-#     spacing_pixels = spacing_meters / pixel_to_meter
-
-#     # Calculate total shoreline length
-#     total_length = cumulative_distances[-1]
-#     total_length_meters = total_length * pixel_to_meter
-
-#     # Calculate exact positions for transects at equal intervals
-#     num_transects = max(2, int(total_length / spacing_pixels))
-#     exact_distances = np.linspace(0, total_length, num_transects)
-
-#     # Generate transects at precisely these positions
-#     transects = []
-#     for target_distance in exact_distances:
-#         # Binary search to find the exact position along the shoreline
-#         left = 0
-#         right = len(cumulative_distances) - 1
-
-#         while right - left > 1:
-#             mid = (left + right) // 2
-#             if cumulative_distances[mid] < target_distance:
-#                 left = mid
-#             else:
-#                 right = mid
-
-#         # Calculate interpolation factor between the two closest points
-#         segment_length = cumulative_distances[right] - cumulative_distances[left]
-#         if segment_length > 0:
-#             alpha = (target_distance - cumulative_distances[left]) / segment_length
-#         else:
-#             alpha = 0
-
-#         # Interpolate to get the exact point
-#         point = shoreline[left] * (1 - alpha) + shoreline[right] * alpha
-
-#         # Calculate local orientation using nearby points
-#         window = 3  # Use nearby points for better direction estimation
-#         start_idx = max(0, left - window)
-#         end_idx = min(len(shoreline) - 1, right + window)
-
-#         if end_idx > start_idx + 1:
-#             direction_points = shoreline[start_idx:end_idx+1]
-#             # Use linear regression to find the best direction
-#             y_coords = direction_points[:, 0]
-#             x_coords = direction_points[:, 1]
-
-#             A = np.vstack([x_coords, np.ones(len(x_coords))]).T
-#             slope, _ = np.linalg.lstsq(A, y_coords, rcond=None)[0]
-
-#             tangent = np.array([slope, 1])
-#             tangent = tangent / np.linalg.norm(tangent)
-#         else:
-#             # Fallback to direct direction if not enough points
-#             if right < len(shoreline) - 1:
-#                 tangent = shoreline[right+1] - shoreline[right]
-#             else:
-#                 tangent = shoreline[right] - shoreline[left]
-#             tangent = tangent / np.linalg.norm(tangent)
-
-#         # Calculate normal vector (perpendicular to tangent)
-#         normal = np.array([-tangent[1], tangent[0]])
-
-#         # Orient toward sea if direction provided
-#         if sea_direction is not None:
-#             if np.dot(normal, sea_direction) < 0:
-#                 normal = -normal
-
-#         # Generate transect start and end points
-#         start_point = point - normal * transect_length/2
-#         end_point = point + normal * transect_length/2
-#         transects.append((start_point, end_point))
-
-#     return transects
 def generate_truly_perpendicular_transects(shoreline, spacing_meters=100, transect_length=100,
                                   sea_direction=None, pixel_to_meter=1.0, debug_output=True):
-    """
-    Generate transects that are truly perpendicular to the shoreline with extensive validation.
-    
-    Parameters:
-    -----------
-    shoreline : numpy.ndarray
-        Array of shoreline points in format [row, col]
-    spacing_meters : float
-        Desired spacing between transects in meters
-    transect_length : float
-        Length of transects in pixels
-    sea_direction : numpy.ndarray or None
-        Direction vector pointing towards the sea
-    pixel_to_meter : float
-        Conversion factor from pixels to meters
-    debug_output : bool
-        Whether to print debug information and save debug visualizations
-        
-    Returns:
-    --------
-    dict
-        Dictionary containing transects and debug information
-    """
+   
     import numpy as np
     import matplotlib.pyplot as plt
     import cv2
@@ -669,26 +559,6 @@ def generate_truly_perpendicular_transects(shoreline, spacing_meters=100, transe
     
     return results
 def verify_true_perpendicularity(shoreline, transects):
-    """
-    Verify that transects are truly perpendicular to the shoreline.
-    This version uses a more direct verification approach by comparing
-    the transect direction to the direction of the shoreline segment.
-    
-    Parameters:
-    -----------
-    shoreline : numpy.ndarray
-        Array of shoreline points
-    transects : list
-        List of transects, each defined by [start_point, end_point]
-        
-    Returns:
-    --------
-    dict
-        Dictionary with verification results
-    """
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import os
     
     results = {
         "perpendicular_count": 0,
@@ -859,7 +729,110 @@ def visualize_transect_spacing(shoreline, transects, model_dir=None):
         output_path = os.path.join(model_dir, "transect_spacing.png")
     plt.savefig(output_path, dpi=300)
     plt.close()
-
+def visualize_shoreline_change_graph(nsm_values, transect_indices, output_path, max_threshold=None, model_name=None):
+    """
+    Create a graph showing shoreline change by transect with positive values up and negative values down.
+    
+    Parameters:
+    -----------
+    nsm_values : array-like
+        NSM values for each transect
+    transect_indices : array-like
+        Indices or numbers for each transect
+    output_path : str
+        Path to save the output image
+    max_threshold : float or None
+        Maximum threshold for values to include (absolute value)
+    model_name : str or None
+        Name of the model to include in the title
+    """
+    # Create a DataFrame for easier handling
+    df = pd.DataFrame({
+        'Transect': transect_indices,
+        'NSM (m)': nsm_values
+    })
+    
+    # Apply threshold if specified
+    if max_threshold is not None:
+        # Store how many values were excluded
+        original_count = len(df)
+        # Filter data
+        df = df[abs(df['NSM (m)']) <= max_threshold]
+        filtered_count = original_count - len(df)
+        print(f"Filtered out {filtered_count} values exceeding threshold of {max_threshold}m")
+    
+    # Create the figure
+    plt.figure(figsize=(15, 8))
+    
+    # Bar colors
+    accretion_color = 'green'
+    erosion_color = 'red'
+    zero_color = 'gray'
+    
+    # Create bars with appropriate colors
+    bars = plt.bar(df['Transect'], df['NSM (m)'], width=0.8)
+    
+    # Color the bars according to their value
+    for i, bar in enumerate(bars):
+        if df['NSM (m)'].iloc[i] > 0:
+            bar.set_color(accretion_color)
+        elif df['NSM (m)'].iloc[i] < 0:
+            bar.set_color(erosion_color)
+        else:
+            bar.set_color(zero_color)
+    
+    # Add zero reference line
+    plt.axhline(y=0, color='black', linestyle='-', alpha=0.3)
+    
+    # Add labels and title
+    plt.xlabel('Transect Number')
+    plt.ylabel('Shoreline Change (m)')
+    title = 'Shoreline Change by Transect'
+    if model_name:
+        title += f' - {model_name}'
+    plt.title(title)
+    
+    # Add legend
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=accretion_color, label='Accretion'),
+        Patch(facecolor=erosion_color, label='Erosion'),
+        Patch(facecolor=zero_color, label='No Change')
+    ]
+    plt.legend(handles=legend_elements, loc='upper right')
+    
+    # Add statistics as text
+    accretion_count = len(df[df['NSM (m)'] > 0])
+    erosion_count = len(df[df['NSM (m)'] < 0])
+    no_change_count = len(df[df['NSM (m)'] == 0])
+    max_accretion = df['NSM (m)'].max()
+    max_erosion = df['NSM (m)'].min()
+    avg_change = df['NSM (m)'].mean()
+    
+    stats_text = (
+        f"Accretion: {accretion_count} transects ({accretion_count/len(df)*100:.1f}%)\n"
+        f"Erosion: {erosion_count} transects ({erosion_count/len(df)*100:.1f}%)\n"
+        f"No Change: {no_change_count} transects ({no_change_count/len(df)*100:.1f}%)\n"
+        f"Max Accretion: {max_accretion:.1f}m\n"
+        f"Max Erosion: {max_erosion:.1f}m\n"
+        f"Average Change: {avg_change:.1f}m"
+    )
+    plt.text(0.02, 0.97, stats_text, transform=plt.gca().transAxes, 
+             verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    
+    # Improve layout
+    plt.tight_layout()
+    plt.grid(True, axis='y', alpha=0.3)
+    
+    # Show every 10th transect label to avoid crowding
+    if len(df) > 20:
+        step = max(1, len(df) // 20)
+        plt.xticks(df['Transect'][::step])
+    
+    # Save the figure
+    plt.savefig(output_path, dpi=300)
+    print(f"Graph saved to {output_path}")
+    plt.close()
 def find_intersection_points_improved(line_start, line_end, mask):
     """
     Find all intersection points where a transect meets a shoreline.
@@ -894,7 +867,7 @@ def find_closest_point_to_midpoint(points, midpoint):
     return points[closest_idx]
 
 def calculate_shoreline_change_with_direction(image1, image2, transects, 
-                                             pixel_to_meter=1.0, time_interval_years=1.0):
+                                             pixel_to_meter=10.0, time_interval_years=1.0):
     """Calculate shoreline change along transects"""
     # Create binary masks
     shoreline1_mask = (image1 > 0).astype(np.uint8)
@@ -949,7 +922,41 @@ def calculate_shoreline_change_with_direction(image1, image2, transects,
         epr_values.append(epr)
     
     return np.array(nsm_values), np.array(epr_values), intersection_points1, intersection_points2, valid_transects
-
+def filter_unrealistic_values(nsm_values, epr_values, valid_transects, intersection_points1, 
+                             intersection_points2, max_change_threshold=100):
+    """
+    Filter out unrealistic shoreline change values that exceed a maximum threshold
+    
+    Parameters:
+    -----------
+    nsm_values, epr_values : numpy arrays of change measurements
+    valid_transects, intersection_points1, intersection_points2 : lists of corresponding geometry
+    max_change_threshold : maximum realistic change in meters (absolute value)
+    
+    Returns:
+    --------
+    Filtered arrays and lists
+    """
+    # Create mask for values within realistic range
+    mask = np.abs(nsm_values) <= max_change_threshold
+    
+    # Apply filter
+    filtered_nsm = nsm_values[mask]
+    filtered_epr = epr_values[mask]
+    filtered_transects = [valid_transects[i] for i in range(len(mask)) if mask[i]]
+    filtered_points1 = [intersection_points1[i] for i in range(len(mask)) if mask[i]]
+    filtered_points2 = [intersection_points2[i] for i in range(len(mask)) if mask[i]]
+    
+    # Print statistics about filtered values
+    removed_count = np.sum(~mask)
+    removed_indices = np.where(~mask)[0]
+    
+    print(f"Filtered out {removed_count} unrealistic values ({removed_count/len(nsm_values)*100:.1f}%)")
+    if removed_count > 0:
+        print(f"Removed transects: {removed_indices + 1}") # +1 for 1-based indexing
+        print(f"Removed values: {nsm_values[~mask]}")
+    
+    return filtered_nsm, filtered_epr, filtered_transects, filtered_points1, filtered_points2
 def visualize_shoreline_change(image1, image2, model_name, shoreline1, shoreline2, transects,
                               intersection_points1, intersection_points2, nsm_values):
     """Visualize shoreline change results"""
@@ -1091,19 +1098,7 @@ def visualize_shoreline_change(image1, image2, model_name, shoreline1, shoreline
     return stats
 
 def extract_date_from_filename(filename):
-    """
-    Extract the date from a filename string that contains a date in format YYYY-MM-DD.
-    
-    Parameters:
-    -----------
-    filename : str
-        The filename containing the date
-        
-    Returns:
-    --------
-    str
-        The extracted date in format YYYY-MM-DD, or None if no date found
-    """
+   
     import re
     import os
     
@@ -1171,9 +1166,14 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
     # Extract dates from filenames
     date1_str = extract_date_from_filename(image1_path)
     date2_str = extract_date_from_filename(image2_path)
-    
+    date1 = datetime.strptime(date1_str, '%Y-%m-%d')
+    date2 = datetime.strptime(date2_str, '%Y-%m-%d')
     print(f"Extracted dates: {date1_str} and {date2_str}")
-    
+    if date2 < date1:
+        # Swap if needed
+        image1_path, image2_path = image2_path, image1_path
+        date1_str, date2_str = date2_str, date1_str
+        satelite1, satelite2 = satelite2, satelite1
     # Calculate time interval in years
     time_interval_years = calculate_time_interval_years(date1_str, date2_str)
     print(f"Time interval: {time_interval_years:.2f} years")
@@ -1248,6 +1248,16 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
             pixel_to_meter=pixel_to_meter,
             time_interval_years=time_interval_years
         )
+        # In run_shoreline_analysis, after calculating the NSM and EPR values:
+        print("Filtering unrealistic values...")
+        nsm_values, epr_values, valid_transects, intersection_points1, intersection_points2 = filter_unrealistic_values(
+            nsm_values, epr_values, valid_transects, intersection_points1, intersection_points2, 
+            max_change_threshold=100  # Adjust threshold based on your site characteristics
+        )
+                # Create a graph of the shoreline change
+        transect_indices = np.arange(1, len(nsm_values) + 1)
+        graph_path = os.path.join(model_dir, "shoreline_change_graph.png")
+        visualize_shoreline_change_graph(nsm_values, transect_indices, graph_path, model_name=model_name)
 
         print("Generating change visualization")
         # Create combined image showing both shorelines
