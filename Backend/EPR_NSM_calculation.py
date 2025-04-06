@@ -1251,29 +1251,47 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
 
         print("Generating change visualization")
         # Create combined image showing both shorelines
-        combined_img = satelite1.copy()
-        mask1 = np.zeros((satelite1.shape[0], satelite1.shape[1]), dtype=np.uint8)
-        mask2 = np.zeros((satelite2.shape[0], satelite2.shape[1]), dtype=np.uint8)
+        # combined_img = satelite1.copy()
+        # mask1 = np.zeros((satelite1.shape[0], satelite1.shape[1]), dtype=np.uint8)
+        # mask2 = np.zeros((satelite2.shape[0], satelite2.shape[1]), dtype=np.uint8)
         
+        # for point in shoreline1:
+        #     y, x = int(point[0]), int(point[1])
+        #     if 0 <= y < mask1.shape[0] and 0 <= x < mask1.shape[1]:
+        #         mask1[y, x] = 255
+        
+        # for point in shoreline2:
+        #     y, x = int(point[0]), int(point[1])
+        #     if 0 <= y < mask2.shape[0] and 0 <= x < mask2.shape[1]:
+        #         mask2[y, x] = 255
+        
+        # # Create RGB visualization
+        # combined_mask = np.zeros((satelite1.shape[0], satelite1.shape[1], 3), dtype=np.uint8)
+        # combined_mask[..., 0] = mask1  # Red channel for first shoreline
+        # combined_mask[..., 2] = mask2  # Blue channel for second shoreline
+        
+        # # Blend with original image
+        # alpha = 0.7
+        # combined_img = cv2.addWeighted(combined_img, 1-alpha, combined_mask, alpha, 0)
+        combined_img = np.zeros((satelite1.shape[0], satelite1.shape[1], 3), dtype=np.uint8)
+
+        # Create the binary masks for shorelines
+        mask1 = np.zeros((combined_img.shape[0], combined_img.shape[1]), dtype=np.uint8)
+        mask2 = np.zeros((combined_img.shape[0], combined_img.shape[1]), dtype=np.uint8)
+
         for point in shoreline1:
             y, x = int(point[0]), int(point[1])
             if 0 <= y < mask1.shape[0] and 0 <= x < mask1.shape[1]:
                 mask1[y, x] = 255
-        
+
         for point in shoreline2:
             y, x = int(point[0]), int(point[1])
             if 0 <= y < mask2.shape[0] and 0 <= x < mask2.shape[1]:
                 mask2[y, x] = 255
-        
-        # Create RGB visualization
-        combined_mask = np.zeros((satelite1.shape[0], satelite1.shape[1], 3), dtype=np.uint8)
-        combined_mask[..., 0] = mask1  # Red channel for first shoreline
-        combined_mask[..., 2] = mask2  # Blue channel for second shoreline
-        
-        # Blend with original image
-        alpha = 0.7
-        combined_img = cv2.addWeighted(combined_img, 1-alpha, combined_mask, alpha, 0)
-        
+
+        # Add the masks to the RGB image - make them brighter since background is black
+        combined_img[..., 2] = mask1  # Red channel for first shoreline
+        combined_img[..., 0] = mask2  
         # Draw transects and change indicators
         max_accretion = max(max(nsm_values), 0) if len(nsm_values) > 0 else 0
         max_erosion = abs(min(min(nsm_values), 0)) if len(nsm_values) > 0 else 0
