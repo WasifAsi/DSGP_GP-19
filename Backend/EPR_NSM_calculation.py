@@ -1219,7 +1219,7 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
                 shoreline2_mask[y, x] = 1
 
         print(f"Generating transects with equal spacing along the shoreline")
-        spacing_meters = 500
+        spacing_meters = 100
         
         # Generate truly perpendicular transects
         transect_results = generate_truly_perpendicular_transects(
