@@ -112,10 +112,10 @@ def identify_sea_component(image, shoreline_points, model_dir=None, transect_len
             cv2.circle(debug_img, (x, y), 3, color, -1)
 
         left_sea_score = (left_features["blue"] * 2) + (left_features["dark"] * 1) - \
-                        (left_features["green"] * 2) - (left_features["brown"] * 3)
+                        (left_features["green"] * 2) - (left_features["brown"] * 10)
 
         right_sea_score = (right_features["blue"] * 2) + (right_features["dark"] * 1) - \
-                          (right_features["green"] * 2) - (right_features["brown"] * 3)
+                          (right_features["green"] * 2) - (right_features["brown"] * 10)
 
         print("--- Component Analysis ---")
         print(f"Component 1 (Left) - Blue: {left_features['blue']}, Dark: {left_features['dark']}, " +
@@ -684,12 +684,10 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
     if image2 is None:
         raise ValueError(f"Could not read image at {image2_path}")
 
-    original_width, original_height = 1156, 1722
-    resized_size = 540
+   
 
-    original_resolution = 10000 / max(original_width, original_height)
-    pixel_to_meter = original_resolution * (max(original_width, original_height) / resized_size)
-
+   
+    pixel_to_meter = 10.0
     model_dir = os.path.join("analysis_results", model_name)
     os.makedirs(model_dir, exist_ok=True)
     
