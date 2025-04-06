@@ -98,9 +98,8 @@ const ChatMessage = ({ text, image, sender, time }: Message) => {
   );
 };
 
-const ModelInsightsPage: React.FC = () => {
+const ChatBotPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
-
     { text: "Hey there 👋 How can I help you today?", sender: "bot", time: " " },
   ]);
   const [input, setInput] = useState<string>("");
@@ -284,4 +283,4 @@ const ModelInsightsPage: React.FC = () => {
   );
 };
 
-export default ModelInsightsPage;
+export default ChatBotPage;

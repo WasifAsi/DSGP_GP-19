@@ -6,7 +6,7 @@ import Index from "./pages/Index";
 import UploadPage from "./pages/UploadPage";
 import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
-import ModelInsightsPage from "./pages/ModelInsightsPage";
+import ChatBotPage from "./pages/ChatBotPage";
 
 function App() {
   const location = useLocation();
@@ -17,7 +17,7 @@ function App() {
         <Route index element={<Index />} />
         <Route path="upload" element={<UploadPage />} />
         <Route path="about" element={<AboutPage />} />
-        <Route path="model-insights" element={<ModelInsightsPage />} />
+        <Route path="chatbot" element={<ChatBotPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -36,7 +36,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Upload & Analysis', path: '/upload' },
-    { name: 'Model Insights', path: '/model-insights' },
+    { name: 'Chat Bot', path: '/chatbot' },
     { name: 'About Us', path: '/about' },
   ];
 
