@@ -309,95 +309,519 @@ def generate_transects_from_baseline(baseline, sea_direction, num_transects=100,
     
     return transects
 
-def generate_equally_spaced_transects(shoreline, spacing_meters=100, transect_length=100,
-                                     sea_direction=None, pixel_to_meter=18.2):
+# def generate_equally_spaced_transects(shoreline, spacing_meters=100, transect_length=100,
+#                                      sea_direction=None, pixel_to_meter=18.2):
+#     """
+#     Generate transects with more precise equal spacing along the shoreline.
+#     """
+#     if len(shoreline) < 2:
+#         print("Warning: Not enough shoreline points to generate transects")
+#         return []
+
+#     # Calculate the exact cumulative distances between all points
+#     cumulative_distances = np.zeros(len(shoreline))
+#     for i in range(1, len(shoreline)):
+#         # Calculate Euclidean distance between consecutive points
+#         distance = np.linalg.norm(shoreline[i] - shoreline[i-1])
+#         cumulative_distances[i] = cumulative_distances[i-1] + distance
+
+#     # Convert spacing from meters to pixels
+#     spacing_pixels = spacing_meters / pixel_to_meter
+
+#     # Calculate total shoreline length
+#     total_length = cumulative_distances[-1]
+#     total_length_meters = total_length * pixel_to_meter
+
+#     # Calculate exact positions for transects at equal intervals
+#     num_transects = max(2, int(total_length / spacing_pixels))
+#     exact_distances = np.linspace(0, total_length, num_transects)
+
+#     # Generate transects at precisely these positions
+#     transects = []
+#     for target_distance in exact_distances:
+#         # Binary search to find the exact position along the shoreline
+#         left = 0
+#         right = len(cumulative_distances) - 1
+
+#         while right - left > 1:
+#             mid = (left + right) // 2
+#             if cumulative_distances[mid] < target_distance:
+#                 left = mid
+#             else:
+#                 right = mid
+
+#         # Calculate interpolation factor between the two closest points
+#         segment_length = cumulative_distances[right] - cumulative_distances[left]
+#         if segment_length > 0:
+#             alpha = (target_distance - cumulative_distances[left]) / segment_length
+#         else:
+#             alpha = 0
+
+#         # Interpolate to get the exact point
+#         point = shoreline[left] * (1 - alpha) + shoreline[right] * alpha
+
+#         # Calculate local orientation using nearby points
+#         window = 3  # Use nearby points for better direction estimation
+#         start_idx = max(0, left - window)
+#         end_idx = min(len(shoreline) - 1, right + window)
+
+#         if end_idx > start_idx + 1:
+#             direction_points = shoreline[start_idx:end_idx+1]
+#             # Use linear regression to find the best direction
+#             y_coords = direction_points[:, 0]
+#             x_coords = direction_points[:, 1]
+
+#             A = np.vstack([x_coords, np.ones(len(x_coords))]).T
+#             slope, _ = np.linalg.lstsq(A, y_coords, rcond=None)[0]
+
+#             tangent = np.array([slope, 1])
+#             tangent = tangent / np.linalg.norm(tangent)
+#         else:
+#             # Fallback to direct direction if not enough points
+#             if right < len(shoreline) - 1:
+#                 tangent = shoreline[right+1] - shoreline[right]
+#             else:
+#                 tangent = shoreline[right] - shoreline[left]
+#             tangent = tangent / np.linalg.norm(tangent)
+
+#         # Calculate normal vector (perpendicular to tangent)
+#         normal = np.array([-tangent[1], tangent[0]])
+
+#         # Orient toward sea if direction provided
+#         if sea_direction is not None:
+#             if np.dot(normal, sea_direction) < 0:
+#                 normal = -normal
+
+#         # Generate transect start and end points
+#         start_point = point - normal * transect_length/2
+#         end_point = point + normal * transect_length/2
+#         transects.append((start_point, end_point))
+
+#     return transects
+def generate_truly_perpendicular_transects(shoreline, spacing_meters=100, transect_length=100,
+                                  sea_direction=None, pixel_to_meter=1.0, debug_output=True):
     """
-    Generate transects with more precise equal spacing along the shoreline.
+    Generate transects that are truly perpendicular to the shoreline with extensive validation.
+    
+    Parameters:
+    -----------
+    shoreline : numpy.ndarray
+        Array of shoreline points in format [row, col]
+    spacing_meters : float
+        Desired spacing between transects in meters
+    transect_length : float
+        Length of transects in pixels
+    sea_direction : numpy.ndarray or None
+        Direction vector pointing towards the sea
+    pixel_to_meter : float
+        Conversion factor from pixels to meters
+    debug_output : bool
+        Whether to print debug information and save debug visualizations
+        
+    Returns:
+    --------
+    dict
+        Dictionary containing transects and debug information
     """
-    if len(shoreline) < 2:
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import cv2
+    import os
+    from scipy.signal import savgol_filter
+    
+    if len(shoreline) < 10:
         print("Warning: Not enough shoreline points to generate transects")
-        return []
+        return {"transects": [], "debug_info": None}
+    
+    results = {
+        "transects": [],
+        "debug_info": {
+            "shoreline_points": shoreline,
+            "tangent_vectors": [],
+            "normal_vectors": [],
+            "transect_points": [],
+            "angles": []
+        }
+    }
 
-    # Calculate the exact cumulative distances between all points
-    cumulative_distances = np.zeros(len(shoreline))
-    for i in range(1, len(shoreline)):
-        # Calculate Euclidean distance between consecutive points
-        distance = np.linalg.norm(shoreline[i] - shoreline[i-1])
+    print(f"Starting with {len(shoreline)} shoreline points")
+    
+    # Step 1: Smooth the shoreline to reduce noise
+    # First convert to separate x and y arrays
+    shoreline_rows = shoreline[:, 0]
+    shoreline_cols = shoreline[:, 1]
+    
+    # Apply Savitzky-Golay filter to smooth the shoreline
+    window_length = min(51, len(shoreline) - (len(shoreline) % 2 + 1))  # Must be odd and smaller than array
+    if window_length < 5:
+        # Not enough points for smoothing
+        smoothed_rows = shoreline_rows
+        smoothed_cols = shoreline_cols
+    else:
+        try:
+            poly_order = min(3, window_length - 1)
+            smoothed_rows = savgol_filter(shoreline_rows, window_length, poly_order)
+            smoothed_cols = savgol_filter(shoreline_cols, window_length, poly_order)
+        except Exception as e:
+            print(f"Smoothing error: {str(e)}. Using original shoreline.")
+            smoothed_rows = shoreline_rows
+            smoothed_cols = shoreline_cols
+    
+    # Recombine into a single array
+    smoothed_shoreline = np.column_stack((smoothed_rows, smoothed_cols))
+    
+    if debug_output:
+        # Visualize original vs smoothed shoreline
+        plt.figure(figsize=(12, 8))
+        plt.plot(shoreline[:, 1], shoreline[:, 0], 'b-', alpha=0.5, label='Original')
+        plt.plot(smoothed_shoreline[:, 1], smoothed_shoreline[:, 0], 'r-', label='Smoothed')
+        plt.legend()
+        plt.title('Original vs Smoothed Shoreline')
+        plt.axis('equal')
+        plt.grid(True)
+        plt.savefig(os.path.join("analysis_results", "shoreline_smoothing.png"), dpi=300)
+        plt.close()
+    
+    # Step 2: Calculate the cumulative distance along the shoreline
+    cumulative_distances = np.zeros(len(smoothed_shoreline))
+    for i in range(1, len(smoothed_shoreline)):
+        distance = np.linalg.norm(smoothed_shoreline[i] - smoothed_shoreline[i-1])
         cumulative_distances[i] = cumulative_distances[i-1] + distance
-
+    
+    total_length = cumulative_distances[-1]
+    print(f"Total shoreline length: {total_length:.2f} pixels ({total_length*pixel_to_meter:.2f} meters)")
+    
     # Convert spacing from meters to pixels
     spacing_pixels = spacing_meters / pixel_to_meter
-
-    # Calculate total shoreline length
-    total_length = cumulative_distances[-1]
-    total_length_meters = total_length * pixel_to_meter
-
+    
+    # Calculate the number of transects
+    num_transects = max(3, int(total_length / spacing_pixels))
+    print(f"Generating {num_transects} transects with {spacing_pixels:.2f} pixel spacing")
+    
     # Calculate exact positions for transects at equal intervals
-    num_transects = max(2, int(total_length / spacing_pixels))
-    exact_distances = np.linspace(0, total_length, num_transects)
-
-    # Generate transects at precisely these positions
-    transects = []
-    for target_distance in exact_distances:
-        # Binary search to find the exact position along the shoreline
-        left = 0
-        right = len(cumulative_distances) - 1
-
-        while right - left > 1:
-            mid = (left + right) // 2
-            if cumulative_distances[mid] < target_distance:
-                left = mid
-            else:
-                right = mid
-
-        # Calculate interpolation factor between the two closest points
-        segment_length = cumulative_distances[right] - cumulative_distances[left]
+    target_distances = np.linspace(0, total_length, num_transects)
+    
+    # Create visualization image for debugging
+    if debug_output:
+        debug_img = np.zeros((1500, 1500, 3), dtype=np.uint8)
+        # Draw smoothed shoreline
+        for i in range(1, len(smoothed_shoreline)):
+            pt1 = (int(smoothed_shoreline[i-1][1]), int(smoothed_shoreline[i-1][0]))
+            pt2 = (int(smoothed_shoreline[i][1]), int(smoothed_shoreline[i][0]))
+            cv2.line(debug_img, pt1, pt2, (255, 255, 255), 1)
+    
+    # Step 3: Generate transects at each position
+    for idx, target_distance in enumerate(target_distances):
+        # Find the segment containing this distance
+        segment_idx = np.searchsorted(cumulative_distances, target_distance) - 1
+        if segment_idx < 0:
+            segment_idx = 0
+        
+        # Get the segment endpoints
+        if segment_idx >= len(smoothed_shoreline) - 1:
+            segment_idx = len(smoothed_shoreline) - 2
+        
+        p1 = smoothed_shoreline[segment_idx]
+        p2 = smoothed_shoreline[segment_idx + 1]
+        
+        # Calculate the interpolation factor
+        segment_length = cumulative_distances[segment_idx + 1] - cumulative_distances[segment_idx]
         if segment_length > 0:
-            alpha = (target_distance - cumulative_distances[left]) / segment_length
+            alpha = (target_distance - cumulative_distances[segment_idx]) / segment_length
         else:
             alpha = 0
-
-        # Interpolate to get the exact point
-        point = shoreline[left] * (1 - alpha) + shoreline[right] * alpha
-
-        # Calculate local orientation using nearby points
-        window = 3  # Use nearby points for better direction estimation
-        start_idx = max(0, left - window)
-        end_idx = min(len(shoreline) - 1, right + window)
-
-        if end_idx > start_idx + 1:
-            direction_points = shoreline[start_idx:end_idx+1]
-            # Use linear regression to find the best direction
-            y_coords = direction_points[:, 0]
-            x_coords = direction_points[:, 1]
-
-            A = np.vstack([x_coords, np.ones(len(x_coords))]).T
-            slope, _ = np.linalg.lstsq(A, y_coords, rcond=None)[0]
-
-            tangent = np.array([slope, 1])
-            tangent = tangent / np.linalg.norm(tangent)
+        
+        # Interpolate to get the exact point on the shoreline
+        point = p1 * (1 - alpha) + p2 * alpha
+        
+        # Calculate the tangent directly using segment direction
+        # Note: We're calculating tangent using direct segment direction, not linear regression
+        # This ensures a more accurate local estimate
+        window = 5  # Number of points to consider on each side
+        start_idx = max(0, segment_idx - window)
+        end_idx = min(len(smoothed_shoreline) - 1, segment_idx + window + 1)
+        
+        # Calculate tangent as weighted average of nearby segments
+        tangent = np.zeros(2)
+        total_weight = 0
+        
+        for i in range(start_idx, end_idx - 1):
+            seg_p1 = smoothed_shoreline[i]
+            seg_p2 = smoothed_shoreline[i + 1]
+            seg_vector = seg_p2 - seg_p1
+            
+            # Weight based on distance from our point
+            weight = 1.0 / (1.0 + abs(i - segment_idx))
+            seg_length = np.linalg.norm(seg_vector)
+            
+            if seg_length > 0:
+                # Add weighted contribution
+                tangent += (seg_vector / seg_length) * weight
+                total_weight += weight
+        
+        if total_weight > 0:
+            tangent /= total_weight
+            tangent_length = np.linalg.norm(tangent)
+            if tangent_length > 0:
+                tangent /= tangent_length
         else:
-            # Fallback to direct direction if not enough points
-            if right < len(shoreline) - 1:
-                tangent = shoreline[right+1] - shoreline[right]
+            # Fallback: use the immediate segment if weighted average failed
+            segment_vector = p2 - p1
+            segment_length = np.linalg.norm(segment_vector)
+            if segment_length > 0:
+                tangent = segment_vector / segment_length
             else:
-                tangent = shoreline[right] - shoreline[left]
-            tangent = tangent / np.linalg.norm(tangent)
-
-        # Calculate normal vector (perpendicular to tangent)
+                # Last resort: use a horizontal vector
+                tangent = np.array([0, 1])
+        
+        # Calculate the normal (perpendicular) vector
+        # In [row, col] format: normal = [-tangent[1], tangent[0]]
         normal = np.array([-tangent[1], tangent[0]])
-
-        # Orient toward sea if direction provided
+        
+        # Make sure normal vector points toward the sea if sea_direction is provided
         if sea_direction is not None:
             if np.dot(normal, sea_direction) < 0:
                 normal = -normal
-
-        # Generate transect start and end points
-        start_point = point - normal * transect_length/2
-        end_point = point + normal * transect_length/2
-        transects.append((start_point, end_point))
-
-    return transects
+                
+        # Create transect start and end points
+        start_point = point - normal * (transect_length / 2)
+        end_point = point + normal * (transect_length / 2)
+        
+        # Calculate angle between tangent and normal (should be 90 degrees)
+        dot_product = np.dot(tangent, normal)
+        angle_rad = np.arccos(min(1.0, max(-1.0, abs(dot_product))))
+        angle_deg = np.degrees(angle_rad)
+        
+        # Store transect and debug info
+        results["transects"].append((start_point, end_point))
+        results["debug_info"]["tangent_vectors"].append((point, tangent))
+        results["debug_info"]["normal_vectors"].append((point, normal))
+        results["debug_info"]["transect_points"].append(point)
+        results["debug_info"]["angles"].append(angle_deg)
+        
+        if debug_output:
+            # Draw the transect point
+            pt = (int(point[1]), int(point[0]))
+            cv2.circle(debug_img, pt, 3, (0, 255, 255), -1)
+            
+            # Draw tangent vector (magnified for visibility)
+            tangent_scale = 30
+            tangent_end = (
+                int(point[1] + tangent[1] * tangent_scale),
+                int(point[0] + tangent[0] * tangent_scale)
+            )
+            cv2.line(debug_img, pt, tangent_end, (0, 0, 255), 1)
+            
+            # Draw normal vector (transect direction)
+            normal_scale = 50
+            normal_end = (
+                int(point[1] + normal[1] * normal_scale),
+                int(point[0] + normal[0] * normal_scale)
+            )
+            cv2.line(debug_img, pt, normal_end, (0, 255, 0), 2)
+            
+            # Draw transect
+            start_pt = (int(start_point[1]), int(start_point[0]))
+            end_pt = (int(end_point[1]), int(end_point[0]))
+            cv2.line(debug_img, start_pt, end_pt, (255, 0, 255), 1)
+            
+            # Add angle annotation
+            if idx % 5 == 0:
+                angle_text = f"{angle_deg:.1f}°"
+                cv2.putText(debug_img, angle_text, (pt[0] + 10, pt[1] - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1)
+    
+    if debug_output:
+        # Add legend
+        cv2.putText(debug_img, "Yellow: Shoreline Points", (20, 30),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+        cv2.putText(debug_img, "Red: Tangent", (20, 60),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(debug_img, "Green: Normal (Transect)", (20, 90),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(debug_img, "Pink: Full Transect", (20, 120),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
+        
+        cv2.imwrite(os.path.join("analysis_results", "transect_debug.png"), debug_img)
+        
+        # Calculate statistics
+        angles = np.array(results["debug_info"]["angles"])
+        perpendicular_count = np.sum(abs(angles - 90) < 5)
+        
+        print(f"Transect perpendicularity statistics:")
+        print(f"  Average deviation from 90°: {np.mean(abs(angles - 90)):.2f}°")
+        print(f"  Maximum deviation from 90°: {np.max(abs(angles - 90)):.2f}°")
+        print(f"  Minimum angle: {np.min(angles):.2f}°")
+        print(f"  Maximum angle: {np.max(angles):.2f}°")
+        print(f"  Transects within 5° of perpendicular: {perpendicular_count}/{len(angles)} ({100*perpendicular_count/len(angles):.1f}%)")
+        
+        # Plot angle histogram
+        plt.figure(figsize=(10, 6))
+        plt.hist(angles, bins=20, color='blue', alpha=0.7)
+        plt.axvline(x=90, color='red', linestyle='--', label='Perfect Perpendicular (90°)')
+        plt.xlabel('Angle (degrees)')
+        plt.ylabel('Count')
+        plt.title('Distribution of Angles between Tangent and Normal')
+        plt.grid(True)
+        plt.legend()
+        plt.savefig(os.path.join("analysis_results", "transect_angles_histogram.png"), dpi=300)
+        plt.close()
+    
+    return results
+def verify_true_perpendicularity(shoreline, transects):
+    """
+    Verify that transects are truly perpendicular to the shoreline.
+    This version uses a more direct verification approach by comparing
+    the transect direction to the direction of the shoreline segment.
+    
+    Parameters:
+    -----------
+    shoreline : numpy.ndarray
+        Array of shoreline points
+    transects : list
+        List of transects, each defined by [start_point, end_point]
+        
+    Returns:
+    --------
+    dict
+        Dictionary with verification results
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import os
+    
+    results = {
+        "perpendicular_count": 0,
+        "non_perpendicular_count": 0,
+        "angles": [],
+        "transect_details": []
+    }
+    
+    if len(shoreline) < 2 or len(transects) == 0:
+        return results
+    
+    # Visualize the verification
+    plt.figure(figsize=(12, 8))
+    plt.plot(shoreline[:, 1], shoreline[:, 0], 'k-', linewidth=1, label='Shoreline')
+    
+    for i, (start, end) in enumerate(transects):
+        # Transect direction
+        transect_dir = end - start
+        transect_length = np.linalg.norm(transect_dir)
+        
+        if transect_length > 0:
+            transect_dir = transect_dir / transect_length
+        else:
+            continue  # Skip zero-length transects
+        
+        # Midpoint of transect (should be on shoreline)
+        midpoint = (start + end) / 2
+        
+        # Find nearest point on shoreline
+        distances = np.array([np.linalg.norm(p - midpoint) for p in shoreline])
+        nearest_idx = np.argmin(distances)
+        
+        # Estimate local shoreline direction using nearest points
+        window = 5
+        left_idx = max(0, nearest_idx - window)
+        right_idx = min(len(shoreline) - 1, nearest_idx + window)
+        
+        if right_idx > left_idx + 1:
+            # Use linear regression for better direction estimation
+            x = shoreline[left_idx:right_idx+1, 1]  # column coordinates
+            y = shoreline[left_idx:right_idx+1, 0]  # row coordinates
+            
+            if len(np.unique(x)) > 1:  # Ensure we have enough unique points
+                # Fit line to local shoreline segment
+                slope, intercept = np.polyfit(x, y, 1)
+                
+                # Calculate shoreline direction in [row, col] format
+                # If y = mx + b, then direction is [1, 1/m]
+                if abs(slope) > 1e-10:  # Avoid division by zero
+                    shore_dir = np.array([1, 1/slope])
+                    shore_dir = shore_dir / np.linalg.norm(shore_dir)
+                else:
+                    # Near-vertical shoreline
+                    shore_dir = np.array([1, 0])
+            else:
+                # Vertical line case - use points directly
+                shore_dir = shoreline[right_idx] - shoreline[left_idx]
+                if np.linalg.norm(shore_dir) > 0:
+                    shore_dir = shore_dir / np.linalg.norm(shore_dir)
+                else:
+                    continue  # Skip problematic segments
+        else:
+            # Not enough points for regression
+            continue
+        
+        # Calculate angle between transect and shoreline
+        # For perpendicular lines, dot product should be close to 0
+        dot_product = np.abs(np.dot(transect_dir, shore_dir))
+        
+        # Ensure we get the angle to perpendicular line (90 degrees)
+        angle_rad = np.arccos(min(1.0, max(-1.0, dot_product)))
+        angle_deg = np.degrees(angle_rad)
+        
+        # Store the angle
+        results["angles"].append(angle_deg)
+        results["transect_details"].append({
+            "transect_idx": i,
+            "transect_dir": transect_dir,
+            "shore_dir": shore_dir,
+            "angle": angle_deg,
+            "start": start,
+            "end": end,
+            "midpoint": midpoint,
+            "nearest_shore_idx": nearest_idx
+        })
+        
+        # Determine if perpendicular (within 5 degrees)
+        if abs(angle_deg - 90) <= 5:
+            results["perpendicular_count"] += 1
+            # Plot perpendicular transects in green
+            plt.plot([start[1], end[1]], [start[0], end[0]], 'g-', alpha=0.7)
+        else:
+            results["non_perpendicular_count"] += 1
+            # Plot non-perpendicular transects in red
+            plt.plot([start[1], end[1]], [start[0], end[0]], 'r-', alpha=0.5)
+            
+        # Add angle annotation for some transects
+        if i % 10 == 0:
+            plt.text(midpoint[1], midpoint[0], f"{angle_deg:.1f}°", 
+                     fontsize=8, color='blue', ha='center', va='bottom')
+    
+    # Add legend and title
+    plt.legend(['Shoreline', 'Perpendicular Transects', 'Non-Perpendicular Transects'])
+    plt.title('Verification of Transect Perpendicularity')
+    plt.axis('equal')
+    plt.grid(True)
+    
+    # Save the figure
+    plt.savefig(os.path.join("analysis_results", "transect_verification.png"), dpi=300)
+    plt.close()
+    
+    # Calculate summary statistics
+    if results["angles"]:
+        angles = np.array(results["angles"])
+        results["average_deviation"] = np.mean(abs(angles - 90))
+        results["max_deviation"] = np.max(abs(angles - 90))
+        results["min_angle"] = np.min(angles)
+        results["max_angle"] = np.max(angles)
+        results["percent_perpendicular"] = (results["perpendicular_count"] / len(transects)) * 100
+        
+        # Plot angle histogram
+        plt.figure(figsize=(10, 6))
+        plt.hist(angles, bins=20, color='blue', alpha=0.7)
+        plt.axvline(x=90, color='red', linestyle='--', label='Perfect Perpendicular (90°)')
+        plt.xlabel('Angle (degrees)')
+        plt.ylabel('Count')
+        plt.title('Distribution of Angles between Transects and Shoreline')
+        plt.grid(True)
+        plt.legend()
+        plt.savefig(os.path.join("analysis_results", "verification_angles_histogram.png"), dpi=300)
+        plt.close()
+    
+    return results
 
 def visualize_transect_spacing(shoreline, transects, model_dir=None):
     plt.figure(figsize=(12, 6))
@@ -723,16 +1147,29 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
 
         print(f"Generating transects with equal spacing along the shoreline")
         spacing_meters = 100
-        transects = generate_equally_spaced_transects(
+        # transects = generate_equally_spaced_transects(
+        #     shoreline1,
+        #     spacing_meters=spacing_meters,
+        #     transect_length=min(image1.shape[0], image1.shape[1])/3,
+        #     sea_direction=sea_direction,
+        #     pixel_to_meter=pixel_to_meter
+        # )
+        transects_results = generate_truly_perpendicular_transects(
             shoreline1,
             spacing_meters=spacing_meters,
             transect_length=min(image1.shape[0], image1.shape[1])/3,
             sea_direction=sea_direction,
             pixel_to_meter=pixel_to_meter
         )
-        
+        transects = transects_results["transects"]
         # Pass model_dir to save transect spacing visualization
         visualize_transect_spacing(shoreline1, transects, model_dir=model_dir)
+        perpendicularity_check = verify_true_perpendicularity(shoreline1, transects)
+        print(f"Transect perpendicularity check:")
+        print(f"  Average deviation from 90°: {perpendicularity_check['average_deviation']:.2f}°")
+        print(f"  Maximum deviation from 90°: {perpendicularity_check['max_deviation']:.2f}°")
+        print(f"  Perpendicular transects: {perpendicularity_check['percent_perpendicular']:.1f}%")
+        
 
         print("Calculating NSM and EPR with transects from improved method")
         time_interval_years = (datetime.strptime(date2, '%Y-%m-%d') - datetime.strptime(date1, '%Y-%m-%d')).days / 365.25
