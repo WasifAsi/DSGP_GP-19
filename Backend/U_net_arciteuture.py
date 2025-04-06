@@ -88,7 +88,7 @@ transform = transforms.Compose(
 
 # U-Net model
 def load_U_net_model():
-    model_name = "Model/best-200-epoch-base-unet.pt"  # Model Name Saved one
+    model_name = "Model/best-150-epoch-base-unet.pt"  # Model Name Saved one
 
     model = UNet(3, 2)  # 3 input channels (RGB), 2 output classes
     model.load_state_dict(torch.load(model_name, map_location=torch.device('cpu')))

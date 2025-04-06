@@ -202,11 +202,32 @@ def identify_sea_component(image, shoreline_points, model_dir=None, transect_len
                    (int(land_label_pos[1]), int(land_label_pos[0])),
                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         
-        # Save to model directory if provided, otherwise use current directory
-        sea_direction_path = "sea_direction_result_improved.jpg"
+        # Save sea direction visualization image
         if model_dir:
+            # First ensure the model directory exists
+            os.makedirs(model_dir, exist_ok=True)
+            
+            # Save directly in the model directory
             sea_direction_path = os.path.join(model_dir, "sea_direction_result_improved.jpg")
-        cv2.imwrite(sea_direction_path, cv2.cvtColor(final_img, cv2.COLOR_RGB2BGR))
+            cv2.imwrite(sea_direction_path, cv2.cvtColor(final_img, cv2.COLOR_RGB2BGR))
+            
+            # Also ensure we save a copy in the analysis_results folder if model_dir is not already under it
+            if not model_dir.startswith(os.path.join("analysis_results")):
+                analysis_dir = os.path.join("analysis_results", os.path.basename(model_dir) if isinstance(model_dir, str) else "")
+                if not os.path.exists(analysis_dir):
+                    os.makedirs(analysis_dir, exist_ok=True)
+                analysis_path = os.path.join(analysis_dir, "sea_direction_result_improved.jpg")
+                cv2.imwrite(analysis_path, cv2.cvtColor(final_img, cv2.COLOR_RGB2BGR))
+                print(f"Sea direction visualization saved to {analysis_path}")
+            else:
+                print(f"Sea direction visualization saved to {sea_direction_path}")
+        else:
+            # If no model_dir provided, save in analysis_results/default
+            default_dir = os.path.join("analysis_results", "default")
+            os.makedirs(default_dir, exist_ok=True)
+            sea_direction_path = os.path.join(default_dir, "sea_direction_result_improved.jpg")
+            cv2.imwrite(sea_direction_path, cv2.cvtColor(final_img, cv2.COLOR_RGB2BGR))
+            print(f"No model directory provided. Sea direction visualization saved to {sea_direction_path}")
 
         return sea_direction
 
