@@ -1589,7 +1589,7 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
             create_shoreline_calculation_demo(
                 shoreline1, shoreline2, valid_transects, 
                 intersection_points1, intersection_points2, nsm_values, 
-                model_dir, n_transects=5  # Show just 5 transects for clarity
+                model_dir, n_transects=10  # Show just 5 transects for clarity
             )
         # Close all matplotlib figures to prevent memory leaks
         plt.close('all')
