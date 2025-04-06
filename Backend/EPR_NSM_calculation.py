@@ -1090,16 +1090,95 @@ def visualize_shoreline_change(image1, image2, model_name, shoreline1, shoreline
     
     return stats
 
-def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model_name):
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    import shutil
+def extract_date_from_filename(filename):
+    """
+    Extract the date from a filename string that contains a date in format YYYY-MM-DD.
     
-    date1 = "2023-10-14"
-    date2 = "2023-11-18"
+    Parameters:
+    -----------
+    filename : str
+        The filename containing the date
+        
+    Returns:
+    --------
+    str
+        The extracted date in format YYYY-MM-DD, or None if no date found
+    """
+    import re
+    import os
+    
+    # Extract just the filename part if a full path is provided
+    basename = os.path.basename(filename)
+    
+    # Use regex to find a date pattern in the filename
+    date_pattern = r'(\d{4}-\d{2}-\d{2})'
+    match = re.search(date_pattern, basename)
+    
+    if match:
+        return match.group(1)
+    else:
+        return None
+
+def calculate_time_interval_years(date1_str, date2_str):
+    """
+    Calculate the time interval between two dates in years.
+    
+    Parameters:
+    -----------
+    date1_str : str
+        First date in format YYYY-MM-DD
+    date2_str : str
+        Second date in format YYYY-MM-DD
+        
+    Returns:
+    --------
+    float
+        Time interval in years
+    """
+    from datetime import datetime
+    
+    if not date1_str or not date2_str:
+        print("Warning: Missing date information, using default 1 year interval")
+        return 1.0
+    
+    try:
+        date1 = datetime.strptime(date1_str, '%Y-%m-%d')
+        date2 = datetime.strptime(date2_str, '%Y-%m-%d')
+        
+        # Calculate difference in days and convert to years
+        days_diff = abs((date2 - date1).days)
+        years_diff = days_diff / 365.25
+        
+        return years_diff
+    except Exception as e:
+        print(f"Error calculating time interval: {str(e)}")
+        print("Using default 1 year interval")
+        return 1.0
+
+# Modification to run_shoreline_analysis to extract dates from filenames
+def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model_name):
+    import cv2
+    import numpy as np
+    import os
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    from datetime import datetime
     
     print(f"Reading segmented images from {model_name}")
+    print(f"Image 1: {image1_path}")
+    print(f"Image 2: {image2_path}")
+    
+    # Extract dates from filenames
+    date1_str = extract_date_from_filename(image1_path)
+    date2_str = extract_date_from_filename(image2_path)
+    
+    print(f"Extracted dates: {date1_str} and {date2_str}")
+    
+    # Calculate time interval in years
+    time_interval_years = calculate_time_interval_years(date1_str, date2_str)
+    print(f"Time interval: {time_interval_years:.2f} years")
+    
+    # Continue with the existing code...
     image1 = cv2.imread(image1_path, cv2.IMREAD_GRAYSCALE)
     image2 = cv2.imread(image2_path, cv2.IMREAD_GRAYSCALE)
     
@@ -1108,12 +1187,7 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
     if image2 is None:
         raise ValueError(f"Could not read image at {image2_path}")
 
-    original_width, original_height = 1156, 1722
-    resized_size = 540
-
-    original_resolution = 10000 / max(original_width, original_height)
-    pixel_to_meter = original_resolution * (max(original_width, original_height) / resized_size)
-
+    pixel_to_meter = 10.0
     model_dir = os.path.join("analysis_results", model_name)
     os.makedirs(model_dir, exist_ok=True)
     
@@ -1129,8 +1203,7 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
         shoreline2 = order_shoreline_points(shoreline_points2)
 
         print("Detecting sea direction using robust component analysis")
-        # Pass model_dir to save sea direction images
-        sea_direction = identify_sea_component(satelite1, shoreline1, model_dir=model_dir)
+        sea_direction = identify_sea_component(satelite1, shoreline1)
         
         # Create binary masks for shorelines
         shoreline1_mask = np.zeros((image1.shape[0], image1.shape[1]), dtype=np.uint8)
@@ -1146,33 +1219,30 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
                 shoreline2_mask[y, x] = 1
 
         print(f"Generating transects with equal spacing along the shoreline")
-        spacing_meters = 100
-        # transects = generate_equally_spaced_transects(
-        #     shoreline1,
-        #     spacing_meters=spacing_meters,
-        #     transect_length=min(image1.shape[0], image1.shape[1])/3,
-        #     sea_direction=sea_direction,
-        #     pixel_to_meter=pixel_to_meter
-        # )
-        transects_results = generate_truly_perpendicular_transects(
+        spacing_meters = 500
+        
+        # Generate truly perpendicular transects
+        transect_results = generate_truly_perpendicular_transects(
             shoreline1,
             spacing_meters=spacing_meters,
             transect_length=min(image1.shape[0], image1.shape[1])/3,
             sea_direction=sea_direction,
-            pixel_to_meter=pixel_to_meter
+            pixel_to_meter=pixel_to_meter,
+            debug_output=True
         )
-        transects = transects_results["transects"]
-        # Pass model_dir to save transect spacing visualization
-        visualize_transect_spacing(shoreline1, transects, model_dir=model_dir)
-        perpendicularity_check = verify_true_perpendicularity(shoreline1, transects)
-        print(f"Transect perpendicularity check:")
-        print(f"  Average deviation from 90°: {perpendicularity_check['average_deviation']:.2f}°")
-        print(f"  Maximum deviation from 90°: {perpendicularity_check['max_deviation']:.2f}°")
-        print(f"  Perpendicular transects: {perpendicularity_check['percent_perpendicular']:.1f}%")
         
+        # Extract just the transects from the results
+        transects = transect_results["transects"]
+        
+        # Verify transects are perpendicular
+        verification = verify_true_perpendicularity(shoreline1, transects)
+        print(f"Verified transect perpendicularity:")
+        print(f"  Average deviation from 90°: {verification['average_deviation']:.2f}°")
+        print(f"  Maximum deviation from 90°: {verification['max_deviation']:.2f}°")
+        print(f"  Perpendicular transects: {verification['percent_perpendicular']:.1f}%")
 
-        print("Calculating NSM and EPR with transects from improved method")
-        time_interval_years = (datetime.strptime(date2, '%Y-%m-%d') - datetime.strptime(date1, '%Y-%m-%d')).days / 365.25
+        print("Calculating NSM and EPR with perpendicular transects")
+        # Use the extracted time interval for EPR calculation
         nsm_values, epr_values, intersection_points1, intersection_points2, valid_transects = calculate_shoreline_change_with_direction(
             shoreline1_mask, shoreline2_mask, transects,
             pixel_to_meter=pixel_to_meter,
@@ -1180,10 +1250,10 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
         )
 
         print("Generating change visualization")
-        # Create a black background image instead of using the satellite image
-        combined_img = np.zeros((image1.shape[0], image1.shape[1], 3), dtype=np.uint8)
-        mask1 = np.zeros((image1.shape[0], image1.shape[1]), dtype=np.uint8)
-        mask2 = np.zeros((image2.shape[0], image2.shape[1]), dtype=np.uint8)
+        # Create combined image showing both shorelines
+        combined_img = satelite1.copy()
+        mask1 = np.zeros((satelite1.shape[0], satelite1.shape[1]), dtype=np.uint8)
+        mask2 = np.zeros((satelite2.shape[0], satelite2.shape[1]), dtype=np.uint8)
         
         for point in shoreline1:
             y, x = int(point[0]), int(point[1])
@@ -1195,13 +1265,14 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
             if 0 <= y < mask2.shape[0] and 0 <= x < mask2.shape[1]:
                 mask2[y, x] = 255
         
-        # Create RGB visualization on black background
-        combined_mask = np.zeros((image1.shape[0], image1.shape[1], 3), dtype=np.uint8)
+        # Create RGB visualization
+        combined_mask = np.zeros((satelite1.shape[0], satelite1.shape[1], 3), dtype=np.uint8)
         combined_mask[..., 0] = mask1  # Red channel for first shoreline
         combined_mask[..., 2] = mask2  # Blue channel for second shoreline
         
-        # No blending needed - use the mask directly on black background
-        combined_img = combined_mask.copy()
+        # Blend with original image
+        alpha = 0.7
+        combined_img = cv2.addWeighted(combined_img, 1-alpha, combined_mask, alpha, 0)
         
         # Draw transects and change indicators
         max_accretion = max(max(nsm_values), 0) if len(nsm_values) > 0 else 0
@@ -1259,9 +1330,10 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
         cv2.putText(combined_img, "Red: Erosion", (10, legend_y + 90), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         
-        # Add title
-        title = f"Shoreline Change Analysis: {model_name}"
-        cv2.putText(combined_img, title, (satelite1.shape[1]//2 - 200, 30), 
+        # Add title with dates
+        dates_info = f"{date1_str} to {date2_str}"
+        title = f"Shoreline Change Analysis: {model_name} ({dates_info})"
+        cv2.putText(combined_img, title, (satelite1.shape[1]//2 - 300, 30), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2, cv2.LINE_AA)
         
         # Add statistics
@@ -1277,16 +1349,20 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
         cv2.putText(combined_img, f"Max erosion: {max_erosion_val:.2f} m", 
                     (10, stats_y + 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         
+        # Add time period information
+        time_y = stats_y - 30
+        cv2.putText(combined_img, f"Time period: {time_interval_years:.2f} years", 
+                    (10, time_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        
         # Save visualization
-        output_path = os.path.join(model_dir, "shoreline_change_visualization.jpg")
+        output_path = os.path.join(model_dir, "shoreline_change_perpendicular_visualization.jpg")
         cv2.imwrite(output_path, combined_img)
         
-        # Save matplotlib version too
         plt.figure(figsize=(12, 6))
         plt.imshow(cv2.cvtColor(combined_img, cv2.COLOR_BGR2RGB))
         plt.axis('off')
         plt.tight_layout()
-        plt.savefig(os.path.join(model_dir, "shoreline_change_visualization_matplotlib.png"), dpi=300, facecolor='black', edgecolor='black')
+        plt.savefig(os.path.join(model_dir, "shoreline_change_perpendicular_visualization_matplotlib.png"), dpi=300)
         plt.close()
         
         # Calculate statistics for return
@@ -1297,7 +1373,10 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
                 "min_nsm": np.min(nsm_values),
                 "std_nsm": np.std(nsm_values),
                 "accretion_percent": np.sum(nsm_values > 0) / len(nsm_values) * 100,
-                "erosion_percent": np.sum(nsm_values < 0) / len(nsm_values) * 100
+                "erosion_percent": np.sum(nsm_values < 0) / len(nsm_values) * 100,
+                "time_interval_years": time_interval_years,
+                "date1": date1_str,
+                "date2": date2_str
             }
         else:
             stats = {
@@ -1306,7 +1385,10 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
                 "min_nsm": 0,
                 "std_nsm": 0,
                 "accretion_percent": 0,
-                "erosion_percent": 0
+                "erosion_percent": 0,
+                "time_interval_years": time_interval_years,
+                "date1": date1_str,
+                "date2": date2_str
             }
 
         # Add EPR statistics
@@ -1320,12 +1402,19 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
             results_df = pd.DataFrame({
                 'Transect': range(1, len(nsm_values) + 1),
                 'NSM (m)': nsm_values,
-                'EPR (m/year)': epr_values
+                'EPR (m/year)': epr_values,
+                'Perpendicular': True
             })
-            results_df.to_csv(os.path.join(model_dir, "shoreline_results.csv"), index=False)
+            results_df.to_csv(os.path.join(model_dir, "shoreline_perpendicular_results.csv"), index=False)
+            
+            # Add perpendicularity stats
+            stats["avg_perpendicular_deviation"] = verification["average_deviation"]
+            stats["max_perpendicular_deviation"] = verification["max_deviation"]
+            stats["percent_perpendicular"] = verification["percent_perpendicular"]
             
             print(f"Average EPR: {stats['avg_epr']:.2f} meters/year")
-            print(f"Results saved to {model_dir}/shoreline_results.csv")
+            print(f"Time period: {time_interval_years:.2f} years ({date1_str} to {date2_str})")
+            print(f"Results saved to {model_dir}/shoreline_perpendicular_results.csv")
         else:
             print("WARNING: No valid transect intersections were found!")
             stats["avg_epr"] = 0
