@@ -3,6 +3,7 @@ import { FiSend } from "react-icons/fi";
 import { BsRobot } from "react-icons/bs";
 import { motion, AnimatePresence } from "framer-motion";
 
+
 type Message = {
   text?: string;
   image?: string;
@@ -17,10 +18,12 @@ const TypingIndicator = () => (
     animate={{ opacity: 1 }}
     transition={{ duration: 0.3 }}
   >
+
     {[0, 1, 2].map((i) => (
       <motion.span
         key={i}
         className="w-2 h-2 bg-muted-foreground rounded-full"
+
         animate={{
           y: [0, -4, 0],
           opacity: [0.5, 1, 0.5],
@@ -97,11 +100,13 @@ const ChatMessage = ({ text, image, sender, time }: Message) => {
 
 const ModelInsightsPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
+
     { text: "Hey there 👋 How can I help you today?", sender: "bot", time: " " },
   ]);
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
+
 
   const getCurrentTime = () => {
     const now = new Date();
@@ -142,10 +147,12 @@ const ModelInsightsPage: React.FC = () => {
         time: getCurrentTime(),
       }));
 
+
       setTimeout(() => {
         setMessages((prev) => [...prev.slice(0, -1), ...botResponses]);
         setLoading(false);
       }, 1000 + botResponses.length * 300);
+
     } catch (err) {
       console.error(err);
       setMessages((prev) => [

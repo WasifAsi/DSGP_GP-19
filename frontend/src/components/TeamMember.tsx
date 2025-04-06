@@ -57,7 +57,3 @@ const TeamMember = ({ name, title, affiliation, description, imageSrc, delay = 0
 };
 
 export default TeamMember;
-
-
-      
-
