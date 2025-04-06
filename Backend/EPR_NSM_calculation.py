@@ -684,10 +684,12 @@ def run_shoreline_analysis(image1_path, image2_path, satelite1, satelite2, model
     if image2 is None:
         raise ValueError(f"Could not read image at {image2_path}")
 
-   
+    original_width, original_height = 1156, 1722
+    resized_size = 540
 
-   
-    pixel_to_meter = 10.0
+    original_resolution = 10000 / max(original_width, original_height)
+    pixel_to_meter = original_resolution * (max(original_width, original_height) / resized_size)
+
     model_dir = os.path.join("analysis_results", model_name)
     os.makedirs(model_dir, exist_ok=True)
     
