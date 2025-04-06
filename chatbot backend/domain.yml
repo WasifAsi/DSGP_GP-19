@@ -1,0 +1,197 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - explain_shoreline_analysis
+  - importance_of_shoreline_analysis
+  - tools_for_shoreline_analysis
+  - define_coastal_erosion
+  - show_example_shoreline_change
+  - calculate_shoreline_change
+  - causes_of_shoreline_change
+  - what_is_dsas
+  - erosion_vs_accretion
+  - explain_baseline
+  - sea_level_rise_effect
+  - prevent_coastal_erosion
+  - explain_transects
+  - required_datasets
+  - explain_shoreline_retreat
+  - visualize_shoreline_change
+  - define_coastal_vulnerability
+  - explain_shapefile
+  - natural_methods_protection
+  - use_qgis
+  - ask_nsm
+  - ask_epr
+  - ask_nsm_epr_difference
+  - ask_shoreline_change_method
+  - ask_why_use_nsm_epr
+  - ask_units_and_scale
+  - ask_accuracy_factors
+  - ask_transect_explanation
+  - ask_positive_negative_meaning
+  - ask_how_many_transects
+  - ask_erosion_accretion_stats
+  - ask_unet
+  - ask_segnet
+  - ask_deeplabv3
+  - ask_fcn8
+  - what_is_shoreline
+
+responses:
+
+  utter_greet:
+    - text: "Hey there! 👋 How can I help you with shoreline analysis or segmentation models today?"
+
+  utter_goodbye:
+    - text: "Goodbye! 🌊 If you have more questions later, feel free to come back."
+
+  utter_happy:
+    - text: "That's wonderful to hear! 😊"
+
+  utter_cheer_up:
+    - text: "I'm here for you. Here's a soothing image to lift your mood:"
+      image: "/asset/pexels-sebastian-sørensen-1276518.jpg"
+
+  utter_did_that_help:
+    - text: "Did that help you feel better?"
+
+  utter_iamabot:
+    - text: "I’m an AI assistant powered by Rasa and trained to help with shoreline and segmentation analysis."
+
+  # --- Focused NSM/EPR Answers ---
+  utter_calculate_nsm:
+    - text: |
+        NSM (Net Shoreline Movement) is calculated by using a deep learning model to extract shorelines from satellite images taken at two different times. Then, transects are drawn across the shorelines. The pixel distance between intersections on each transect is converted to meters, representing the shoreline movement. Positive = accretion, Negative = erosion.
+
+  utter_calculate_epr:
+    - text: |
+        EPR (End Point Rate) is calculated by dividing the Net Shoreline Movement (NSM) by the time between the two shoreline images. For example, if the NSM is 50m over 10 years, EPR = 5 meters/year.
+
+  utter_predict_shoreline_movement:
+    - text: |
+        We predict shoreline movement by extracting coastlines from satellite imagery with deep learning segmentation models and then applying NSM and EPR calculations using transects to analyze direction and magnitude of shoreline shift.
+
+  utter_what_is_shoreline:
+    - text: |
+        A shoreline is the boundary where land meets the sea or ocean. It's constantly changing due to tides, wave action, storms, and human activity, and is a critical zone for monitoring coastal change.
+
+  # --- Shoreline Analysis Set ---
+  utter_explain_shoreline_analysis:
+    - text: "Shoreline analysis is the process of tracking how coastlines change over time using maps, satellite images, and tools like GIS or DSAS."
+
+  utter_importance_of_shoreline_analysis:
+    - text: "It's crucial for understanding erosion, planning coastal defenses, protecting ecosystems, and managing land near the sea."
+
+  utter_tools_used:
+    - text: "Common tools include QGIS, ArcGIS, DSAS, and remote sensing data from satellites like Landsat or Sentinel."
+
+  utter_coastal_erosion:
+    - text: "Coastal erosion is when waves, tides, or human activity wear away shoreline material, shrinking beaches or cliffs."
+
+  utter_example_shoreline_change:
+    - text: "Here’s an example image showing how a coastline shifted over a decade."
+      image: "https://example.com/shoreline-change.png"
+
+  utter_calculate_change:
+    - text: "We calculate shoreline change by drawing transects and comparing shoreline intersections over time using deep learning and GIS."
+
+  utter_causes_change:
+    - text: "Shoreline change can be caused by tides, storms, sea level rise, sediment transport, and human interference like construction."
+
+  utter_explain_dsas:
+    - text: "DSAS (Digital Shoreline Analysis System) is a GIS tool that automates shoreline change metrics like NSM and EPR."
+
+  utter_diff_erosion_accretion:
+    - text: "Erosion = land loss, shoreline moves inland. Accretion = land gain, shoreline moves seaward."
+
+  utter_baseline:
+    - text: "A baseline is a fixed reference line from which transects are drawn to measure shoreline movement."
+
+  utter_sea_level_rise:
+    - text: "Rising sea levels worsen erosion, flood coastal land, and threaten habitats and infrastructure."
+
+  utter_prevent_erosion:
+    - text: "Erosion can be prevented with vegetation, seawalls, breakwaters, dunes, or coral reefs."
+
+  utter_transects:
+    - text: "Transects are perpendicular lines from a baseline used to measure shoreline movement over time."
+
+  utter_required_datasets:
+    - text: "You need historical satellite images, shoreline shapefiles, spatial resolution info, and tide level data."
+
+  utter_shoreline_retreat:
+    - text: "Shoreline retreat is the inland shift of the shoreline due to erosion or sea level rise."
+
+  utter_visualize_change:
+    - text: "Tools like QGIS or DSAS can animate shoreline changes over time using multiple dated shoreline inputs."
+
+  utter_coastal_vulnerability:
+    - text: "It refers to how susceptible a coastal area is to hazards like erosion and flooding."
+
+  utter_shapefile:
+    - text: "Shapefiles store spatial vector data—shoreline shapefiles represent coastline positions in GIS."
+
+  utter_natural_methods:
+    - text: "Mangroves, reefs, dunes, and salt marshes are natural defenses against erosion."
+
+  utter_use_qgis:
+    - text: "Yes, QGIS can visualize shapefiles, draw transects, and run DSAS to analyze shoreline change."
+
+  # NSM / EPR extra responses
+  utter_explain_nsm:
+    - text: "NSM = total shoreline movement along a transect between two dates. It shows whether the shoreline eroded or accreted."
+
+  utter_explain_epr:
+    - text: "EPR = rate of change per year. Calculated as NSM divided by time gap. Units: meters/year."
+
+  utter_nsm_epr_difference:
+    - text: "NSM = total movement. EPR = movement per year. EPR = NSM / years."
+
+  utter_shoreline_change_method:
+    - text: "We segment shorelines using deep learning and then compute NSM and EPR using GIS transects."
+
+  utter_why_use_nsm_epr:
+    - text: "They provide measurable insight into how fast and how much shorelines shift, supporting planning and coastal management."
+
+  utter_units_and_scale:
+    - text: "NSM in meters, EPR in meters/year. Pixel distances are converted using satellite image resolution."
+
+  utter_accuracy_factors:
+    - text: "Accuracy depends on resolution, image clarity, cloud cover, shoreline detection quality, and segmentation precision."
+
+  utter_transect_explanation:
+    - text: "Transects divide the coast into measurement segments to analyze localized shoreline change."
+
+  utter_positive_negative_meaning:
+    - text: "Positive NSM/EPR = accretion (seaward movement); Negative = erosion (inland movement)."
+
+  utter_how_many_transects:
+    - text: "Typically 50–200 depending on shoreline length. More transects = better detail."
+
+  utter_erosion_accretion_stats:
+    - text: "Yes! We provide average, min, max NSM/EPR, % erosion/accretion, and exportable reports."
+
+  # Segmentation Model Explanations
+  utter_explain_unet:
+    - text: |
+        U-Net is a deep learning model designed for biomedical image segmentation. It has an encoder-decoder structure with skip connections that help retain fine details in predictions. It’s widely used in medical and geospatial applications.
+
+  utter_explain_segnet:
+    - text: |
+        SegNet is a segmentation model that uses an encoder-decoder architecture. It stores max-pooling indices during downsampling and reuses them during upsampling for better edge reconstruction. It's efficient for pixel-wise classification.
+
+  utter_explain_deeplabv3:
+    - text: |
+        DeepLabV3 uses atrous convolution and spatial pyramid pooling to segment objects at different scales. It performs well on complex images like satellite or street view scenes.
+
+  utter_explain_fcn8:
+    - text: |
+        FCN-8 is a fully convolutional neural network that performs pixel-wise segmentation. It fuses information from shallow and deep layers to make fine-grained predictions. It was one of the first popular segmentation models.

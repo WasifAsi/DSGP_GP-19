@@ -3,25 +3,25 @@ import { Linkedin, Mail } from 'lucide-react';
 
 interface TeamMemberProps {
 
-    name: string;
-    title: string;
-    affiliation: string;
-    description: string;
-    imageSrc: string;
-    delay?: number;
-  }
+  name: string;
+  title: string;
+  affiliation: string;
+  description: string;
+  imageSrc: string;
+  delay?: number;
+}
 
-  const TeamMember = ({ name, title, affiliation, description, imageSrc, delay = 0 }: TeamMemberProps) => {
+const TeamMember = ({ name, title, affiliation, description, imageSrc, delay = 0 }: TeamMemberProps) => {
 
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: delay * 0.1 }}
-        viewport={{ once: true, margin: "-100px" }}
-        className="glossy-card p-6 dark:bg-gray-800/50 dark:backdrop-blur-xl"
-      >
-        <div className="flex flex-col items-center text-center">
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: delay * 0.1 }}
+      viewport={{ once: true, margin: "-100px" }}
+      className="glossy-card p-6 dark:bg-gray-800/50 dark:backdrop-blur-xl"
+    >
+      <div className="flex flex-col items-center text-center">
 
       <div className="relative w-24 h-24 mb-4 overflow-hidden rounded-full border-2 border-shoreline-blue/10 dark:border-shoreline-blue/20">
         <img
@@ -57,4 +57,3 @@ interface TeamMemberProps {
 };
 
 export default TeamMember;
-

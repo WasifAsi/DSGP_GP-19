@@ -1,0 +1,59 @@
+{
+  "slots": [
+    {
+      "data_type": "sentence",
+      "attribute": "slots",
+      "origin": "SingleStateFeaturizer",
+      "is_sparse": true,
+      "shape": [
+        0,
+        1
+      ],
+      "safetensors_key": "slots_0"
+    }
+  ],
+  "text": [
+    {
+      "data_type": "sequence",
+      "attribute": "text",
+      "origin": [
+        "e2e_run_LexicalSyntacticFeaturizer2",
+        "e2e_run_CountVectorsFeaturizer3",
+        "e2e_run_CountVectorsFeaturizer4"
+      ],
+      "is_sparse": true,
+      "shape": [
+        0,
+        1766
+      ],
+      "safetensors_key": "text_0"
+    },
+    {
+      "data_type": "sentence",
+      "attribute": "text",
+      "origin": [
+        "e2e_run_CountVectorsFeaturizer3",
+        "e2e_run_CountVectorsFeaturizer4"
+      ],
+      "is_sparse": true,
+      "shape": [
+        0,
+        1743
+      ],
+      "safetensors_key": "text_1"
+    }
+  ],
+  "action_name": [
+    {
+      "data_type": "sentence",
+      "attribute": "action_name",
+      "origin": "e2e_run_CountVectorsFeaturizer3",
+      "is_sparse": true,
+      "shape": [
+        0,
+        51
+      ],
+      "safetensors_key": "action_name_0"
+    }
+  ]
+}
