@@ -1,0 +1,349 @@
+version: "3.1"
+
+nlu:
+
+# General Greetings & Mood
+- intent: greet
+  examples: |
+    - hello
+    - hi
+    - hey
+    - good morning
+    - good evening
+    - hey there
+    - hi there
+    - greetings
+    - howdy
+    - what's up
+    - yo
+    - sup?
+    - good to see you
+    - hey bot
+    - hello assistant
+    - what's going on?
+
+- intent: goodbye
+  examples: |
+    - bye
+    - goodbye
+    - see you
+    - talk to you later
+    - I'm leaving now
+    - catch you later
+    - see ya
+    - farewell
+    - peace out
+    - take care
+    - see you around
+    - gotta go
+    - ciao
+
+- intent: affirm
+  examples: |
+    - yes
+    - yeah
+    - yep
+    - yessir
+    - definitely
+    - of course
+    - sounds good
+    - correct
+    - absolutely
+    - right
+    - sure
+    - for sure
+    - true
+    - indeed
+
+- intent: deny
+  examples: |
+    - no
+    - nope
+    - not really
+    - I don’t think so
+    - never
+    - no way
+    - nah
+    - not at all
+    - I disagree
+    - that’s incorrect
+
+- intent: mood_great
+  examples: |
+    - I'm feeling great
+    - I am happy today
+    - everything’s going well
+    - I’m in a good mood
+    - couldn’t be better
+    - fantastic
+    - I’m doing awesome
+    - feeling blessed
+    - having a great day
+    - I’m all good
+    - I’m chillin’
+    - vibe is perfect
+
+- intent: mood_unhappy
+  examples: |
+    - I’m not feeling well
+    - I feel sad
+    - I am down
+    - not a good day
+    - I’m upset
+    - I feel terrible
+    - things aren’t going well
+    - feeling blue
+    - I’m not okay
+    - I’m tired of everything
+    - today’s rough
+    - struggling right now
+
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you real or AI?
+    - who created you?
+    - what are you?
+    - are you human?
+    - are you an assistant?
+    - are you a human being?
+    - are you a chatbot?
+    - you're not real, are you?
+    - do you have emotions?
+    - are you self-aware?
+
+# Shoreline Analysis Topics
+- intent: explain_shoreline_analysis
+  examples: |
+    - What is shoreline analysis?
+    - Explain shoreline change analysis
+    - Can you describe shoreline monitoring?
+    - How do we study shoreline changes?
+    - What does shoreline analysis involve?
+    - What’s shoreline mapping about?
+    - I want to learn about shoreline analysis
+
+- intent: importance_of_shoreline_analysis
+  examples: |
+    - Why is shoreline analysis important?
+    - What is the purpose of shoreline monitoring?
+    - What are the benefits of shoreline change detection?
+    - How does shoreline study help the environment?
+    - Is shoreline data useful for planning?
+    - Why should we care about shoreline movement?
+
+- intent: tools_for_shoreline_analysis
+  examples: |
+    - What tools are used for shoreline analysis?
+    - Which software is good for analyzing coasts?
+    - GIS tools for coastline analysis?
+    - What platforms help with coastal mapping?
+
+- intent: define_coastal_erosion
+  examples: |
+    - What is coastal erosion?
+    - Define coastal erosion
+    - Why do coastlines erode?
+    - Coastal erosion explanation?
+
+- intent: show_example_shoreline_change
+  examples: |
+    - Can you show an example of shoreline change?
+    - Visual example of coastal movement?
+    - Any sample map showing shoreline retreat?
+
+- intent: calculate_shoreline_change
+  examples: |
+    - How do you measure shoreline change?
+    - What is the calculation method for shoreline shift?
+    - Shoreline movement calculation method?
+
+- intent: causes_of_shoreline_change
+  examples: |
+    - What causes shoreline change?
+    - Why do coastlines shift?
+    - Natural vs man-made causes of shoreline movement?
+
+- intent: what_is_dsas
+  examples: |
+    - What is DSAS?
+    - Explain DSAS tool
+    - How is DSAS used in shoreline studies?
+
+- intent: erosion_vs_accretion
+  examples: |
+    - What’s the difference between erosion and accretion?
+    - Compare erosion and accretion
+    - Erosion versus buildup
+
+- intent: explain_baseline
+  examples: |
+    - What is a shoreline baseline?
+    - Explain what baseline means in DSAS
+    - Baseline role in shoreline analysis
+
+- intent: sea_level_rise_effect
+  examples: |
+    - How does sea level rise affect coastlines?
+    - Impact of rising seas on shores?
+    - Sea level changes and erosion link?
+
+- intent: prevent_coastal_erosion
+  examples: |
+    - How to prevent erosion along the coast?
+    - Solutions for coastal erosion?
+    - Techniques to stop shoreline retreat?
+
+- intent: explain_transects
+  examples: |
+    - What are shoreline transects?
+    - How do transects help in DSAS?
+    - Purpose of drawing transects?
+
+- intent: required_datasets
+  examples: |
+    - What data is needed for shoreline analysis?
+    - Required datasets for coastal studies?
+    - Input data for shoreline change detection?
+
+- intent: explain_shoreline_retreat
+  examples: |
+    - What is shoreline retreat?
+    - Meaning of shoreline going backward?
+    - Why does the shoreline retreat inland?
+
+- intent: visualize_shoreline_change
+  examples: |
+    - How can I visualize coastline movement?
+    - Which tools help visualize shoreline changes?
+    - Is there a way to animate shoreline shifts?
+
+- intent: define_coastal_vulnerability
+  examples: |
+    - What does coastal vulnerability mean?
+    - How do we assess coastal risk?
+    - Define coastal hazard exposure
+
+- intent: explain_shapefile
+  examples: |
+    - What is a shoreline shapefile?
+    - Role of shapefiles in GIS?
+    - Why use shapefiles in mapping coastlines?
+
+- intent: natural_methods_protection
+  examples: |
+    - What are natural erosion prevention methods?
+    - How does nature defend the coast?
+    - Natural buffers against coastal hazards?
+
+- intent: use_qgis
+  examples: |
+    - Can I use QGIS for shoreline analysis?
+    - Is QGIS good for coastal change studies?
+    - Analyze coastlines in QGIS?
+
+# NSM / EPR Models and Metrics
+- intent: ask_nsm
+  examples: |
+    - What is NSM?
+    - Meaning of Net Shoreline Movement?
+    - How do you calculate NSM?
+    - Does NSM show erosion?
+
+- intent: ask_epr
+  examples: |
+    - What is EPR in shoreline analysis?
+    - End Point Rate explanation?
+    - How is EPR measured?
+    - What does EPR indicate?
+
+- intent: ask_nsm_epr_difference
+  examples: |
+    - What’s the difference between NSM and EPR?
+    - NSM vs EPR?
+    - Are NSM and EPR related?
+
+- intent: ask_shoreline_change_method
+  examples: |
+    - How do you detect shoreline change?
+    - What method is used to calculate shoreline movement?
+    - Describe your analysis process for coastal change
+
+- intent: ask_why_use_nsm_epr
+  examples: |
+    - Why use NSM and EPR?
+    - How do NSM and EPR help?
+    - Importance of shoreline change metrics?
+
+- intent: ask_units_and_scale
+  examples: |
+    - What unit is NSM reported in?
+    - Are results in meters or degrees?
+    - Does image resolution matter?
+
+- intent: ask_accuracy_factors
+  examples: |
+    - What affects shoreline analysis accuracy?
+    - Does cloud cover impact shoreline results?
+    - How do you improve detection accuracy?
+
+- intent: ask_transect_explanation
+  examples: |
+    - Why use transects in DSAS?
+    - Role of transects in shoreline analysis?
+    - How are transects created?
+
+- intent: ask_positive_negative_meaning
+  examples: |
+    - What does a positive NSM mean?
+    - Meaning of negative EPR?
+    - Link between NSM and erosion/accretion?
+
+- intent: ask_how_many_transects
+  examples: |
+    - How many transects should I use?
+    - Are transects spaced equally?
+    - Does more transects mean more accurate results?
+
+- intent: ask_erosion_accretion_stats
+  examples: |
+    - Do you provide erosion and accretion stats?
+    - What statistical outputs are given?
+    - Can I get maximum erosion or accretion?
+
+# Deep Learning Models for Segmentation
+- intent: ask_unet
+  examples: |
+    - What is U-Net?
+    - How does U-Net work?
+    - U-Net architecture explained
+    - Use of U-Net in medical imaging?
+
+- intent: ask_segnet
+  examples: |
+    - What is SegNet?
+    - How is SegNet used in segmentation?
+    - Describe SegNet architecture
+    - Is SegNet accurate?
+
+- intent: ask_deeplabv3
+  examples: |
+    - What is DeepLabV3?
+    - DeepLabV3 in image segmentation?
+    - Atrous convolution in DeepLabV3?
+    - Use of DeepLabV3 in satellite analysis?
+
+- intent: ask_fcn8
+  examples: |
+    - What is FCN-8?
+    - FCN-8 model description?
+    - How does FCN-8 perform pixel-wise segmentation?
+    - Is FCN-8 still used today?
+
+- intent: what_is_shoreline
+  examples: |
+    - What is shoreline?
+    - Define shoreline
+    - Shoreline meaning?
+    - What does shoreline mean?
+    - Tell me what a shoreline is
