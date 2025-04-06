@@ -369,7 +369,7 @@ def generate_truly_perpendicular_transects(shoreline, spacing_meters=100, transe
         plt.title('Original vs Smoothed Shoreline')
         plt.axis('equal')
         plt.grid(True)
-        plt.savefig(os.path.join("analysis_results", "shoreline_smoothing.png"), dpi=300)
+        #plt.savefig(os.path.join("analysis_results", "shoreline_smoothing.png"), dpi=300)
         plt.close()
     
     # Step 2: Calculate the cumulative distance along the shoreline
@@ -532,7 +532,7 @@ def generate_truly_perpendicular_transects(shoreline, spacing_meters=100, transe
         cv2.putText(debug_img, "Pink: Full Transect", (20, 120),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
         
-        cv2.imwrite(os.path.join("analysis_results", "transect_debug.png"), debug_img)
+        #cv2.imwrite(os.path.join("analysis_results", "transect_debug.png"), debug_img)
         
         # Calculate statistics
         angles = np.array(results["debug_info"]["angles"])
@@ -554,7 +554,7 @@ def generate_truly_perpendicular_transects(shoreline, spacing_meters=100, transe
         plt.title('Distribution of Angles between Tangent and Normal')
         plt.grid(True)
         plt.legend()
-        plt.savefig(os.path.join("analysis_results", "transect_angles_histogram.png"), dpi=300)
+        #plt.savefig(os.path.join("analysis_results", "transect_angles_histogram.png"), dpi=300)
         plt.close()
     
     return results
@@ -667,7 +667,7 @@ def verify_true_perpendicularity(shoreline, transects):
     plt.grid(True)
     
     # Save the figure
-    plt.savefig(os.path.join("analysis_results", "transect_verification.png"), dpi=300)
+    #plt.savefig(os.path.join("analysis_results", "transect_verification.png"), dpi=300)
     plt.close()
     
     # Calculate summary statistics
@@ -688,7 +688,7 @@ def verify_true_perpendicularity(shoreline, transects):
         plt.title('Distribution of Angles between Transects and Shoreline')
         plt.grid(True)
         plt.legend()
-        plt.savefig(os.path.join("analysis_results", "verification_angles_histogram.png"), dpi=300)
+        #plt.savefig(os.path.join("analysis_results", "verification_angles_histogram.png"), dpi=300)
         plt.close()
     
     return results
@@ -727,7 +727,7 @@ def visualize_transect_spacing(shoreline, transects, model_dir=None):
     output_path = "transect_spacing.png"
     if model_dir:
         output_path = os.path.join(model_dir, "transect_spacing.png")
-    plt.savefig(output_path, dpi=300)
+    #plt.savefig(output_path, dpi=300)
     plt.close()
 def visualize_shoreline_change_graph(nsm_values, transect_indices, output_path, max_threshold=None, model_name=None):
     """
