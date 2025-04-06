@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, ChevronRight } from 'lucide-react';
 
@@ -7,6 +7,7 @@ const Navbar = () => {
   const [isDark, setIsDark] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,6 +27,10 @@ const Navbar = () => {
 
   const toggleTheme = () => {
     setIsDark(!isDark);
+  };
+
+  const handleNavigation = (path: string) => {
+    window.location.href = path; // Force a page refresh
   };
 
   const navLinks = [
@@ -73,9 +78,9 @@ const Navbar = () => {
 
           <nav className="hidden md:flex items-center space-x-10">
             {navLinks.map((link) => (
-              <Link
+              <button
                 key={link.path}
-                to={link.path}
+                onClick={() => handleNavigation(link.path)}
                 className="relative group py-2"
               >
                 <span className={`text-sm font-medium transition-colors ${
@@ -95,7 +100,7 @@ const Navbar = () => {
                 ) : (
                   <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-shoreline-blue scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
                 )}
-              </Link>
+              </button>
             ))}
           </nav>
 
