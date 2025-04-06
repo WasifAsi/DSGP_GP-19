@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FiSend } from "react-icons/fi";
 import { BsRobot } from "react-icons/bs";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Message = {
   text?: string;
@@ -11,21 +11,29 @@ type Message = {
 };
 
 const TypingIndicator = () => (
-  <div className="flex items-center space-x-1">
+  <motion.div
+    className="flex items-center space-x-1 px-3 py-2 bg-muted rounded-xl shadow-inner"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.3 }}
+  >
     {[0, 1, 2].map((i) => (
       <motion.span
         key={i}
         className="w-2 h-2 bg-muted-foreground rounded-full"
-        animate={{ opacity: [0.3, 1, 0.3] }}
+        animate={{
+          y: [0, -4, 0],
+          opacity: [0.5, 1, 0.5],
+        }}
         transition={{
-          duration: 1,
+          duration: 0.6,
           repeat: Infinity,
           ease: "easeInOut",
           delay: i * 0.2,
         }}
       />
     ))}
-  </div>
+  </motion.div>
 );
 
 const ChatMessage = ({ text, image, sender, time }: Message) => {
@@ -89,18 +97,11 @@ const ChatMessage = ({ text, image, sender, time }: Message) => {
 
 const ModelInsightsPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
-    {
-      text: "Hey there 👋 How can I help you today?",
-      sender: "bot",
-      time: " ",
-    },
+    { text: "Hey there 👋 How can I help you today?", sender: "bot", time: " " },
   ]);
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   const getCurrentTime = () => {
     const now = new Date();
@@ -141,7 +142,10 @@ const ModelInsightsPage: React.FC = () => {
         time: getCurrentTime(),
       }));
 
-      setMessages((prev) => [...prev.slice(0, -1), ...botResponses]);
+      setTimeout(() => {
+        setMessages((prev) => [...prev.slice(0, -1), ...botResponses]);
+        setLoading(false);
+      }, 1000 + botResponses.length * 300);
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
@@ -152,9 +156,31 @@ const ModelInsightsPage: React.FC = () => {
           time: getCurrentTime(),
         },
       ]);
-    } finally {
       setLoading(false);
     }
+  };
+
+  const quickReplyGroups: Record<string, string[]> = {
+    "🌊 Shoreline": [
+      "What is shoreline analysis?",
+      "Why is shoreline monitoring important?",
+      "Show me shoreline change",
+      "Tools for coastal mapping",
+      "Sea level rise impact?",
+      "Visualize shoreline shift",
+      "What causes shoreline change?",
+    ],
+    "📐 Metrics": [
+      "What is NSM?",
+      "What is EPR?",
+      "NSM vs EPR?",
+      "What does negative EPR mean?",
+      "How accurate is shoreline detection?",
+      "How are transects used?",
+      "How many transects to draw?",
+    ],
+    "🤖 Models": ["What is U-Net?", "Explain SegNet", "DeepLabV3 use cases?", "What is FCN-8?"],
+    "💬 General": ["What can you do?", "Explain your purpose", "Who made you?", "Help with shoreline studies?"],
   };
 
   return (
@@ -175,13 +201,7 @@ const ModelInsightsPage: React.FC = () => {
         {/* Messages */}
         <div className="flex-1 p-6 overflow-y-auto scrollbar-thin bg-card transition-colors">
           {messages.map((msg, index) => (
-            <ChatMessage
-              key={index}
-              text={msg.text}
-              image={msg.image}
-              sender={msg.sender}
-              time={msg.time}
-            />
+            <ChatMessage key={index} {...msg} />
           ))}
         </div>
 
@@ -207,23 +227,48 @@ const ModelInsightsPage: React.FC = () => {
           </div>
 
           {/* Quick Replies */}
-          <div className="mt-3 flex gap-2 text-xs flex-wrap">
-            {["What is U-Net?", "Predict shoreline", "📊 FAQs"].map((text, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (!loading) {
-                    setInput(text);
-                    handleSend();
-                  }
-                }}
-                className={`${
-                  loading ? "opacity-50 cursor-not-allowed" : "hover:bg-accent/80"
-                } bg-accent text-accent-foreground rounded-full px-3 py-1 transition`}
-                disabled={loading}
-              >
-                {text}
-              </button>
+          <div className="mt-4 space-y-2">
+            {Object.entries(quickReplyGroups).map(([label, replies]) => (
+              <div key={label}>
+                <button
+                  className="w-full text-left text-sm font-medium bg-muted px-4 py-2 rounded-xl hover:bg-muted/80 transition"
+                  onClick={() => setOpenSection(openSection === label ? null : label)}
+                >
+                  {label} {openSection === label ? "▲" : "▼"}
+                </button>
+
+                <AnimatePresence>
+                  {openSection === label && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="flex flex-wrap gap-2 mt-2 px-1"
+                    >
+                      {replies.map((text, idx) => (
+                        <motion.button
+                          key={idx}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          onClick={() => {
+                            if (!loading) {
+                              setInput(text);
+                              handleSend();
+                            }
+                          }}
+                          className={`${
+                            loading ? "opacity-50 cursor-not-allowed" : "hover:bg-accent/80"
+                          } bg-accent text-accent-foreground rounded-full px-3 py-1 text-xs transition`}
+                          disabled={loading}
+                        >
+                          {text}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ))}
           </div>
         </div>
