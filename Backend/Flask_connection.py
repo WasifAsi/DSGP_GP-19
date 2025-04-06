@@ -120,8 +120,8 @@ def upload_files():
     if not files or files[0].filename == '':
         return jsonify({'error': 'No files selected'}), 400
     
-    if len(files) < 2 or len(files) > 5:
-        return jsonify({'error': f'Please upload between 2 and 5 files (received {len(files)})'}), 400
+    if len(files) != 2:
+        return jsonify({'error': f'Please upload exactly 2 files (received {len(files)})'}), 400
     
     # Generate a simple session ID
     session_id = str(int(time.time()))

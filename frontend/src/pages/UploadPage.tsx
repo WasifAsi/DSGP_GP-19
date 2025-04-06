@@ -70,8 +70,8 @@ const Upload = () => {
   ]);
 
   const handleUpload = async (files: File[]) => {
-    if (!files || files.length < 2 || files.length > 5) {
-      toast.error("Please select 2-5 files to upload");
+    if (!files || files.length != 2) {
+      toast.error("Please select exactly 2 files to upload");
       return;
     }
 
@@ -985,7 +985,7 @@ const Upload = () => {
                   How to fix this:
                 </h4>
                 <ul className="text-sm text-shoreline-text dark:text-gray-300 space-y-1 pl-5 list-disc">
-                  <li>Upload images from the same coastal area</li>
+                  <li>Upload exactly 2 images from the same coastal area</li>
                   <li>Make sure images show the same geographic location</li>
                   <li>The images should be from different time periods to measure changes</li>
                   <li>Verify that images have clear shorelines visible</li>

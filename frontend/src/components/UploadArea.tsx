@@ -27,7 +27,7 @@ const UploadArea = ({
   const allowedFileTypes = ["image/jpg", "image/jpeg"];
   const maxFileSizeMB = 10;
   const minFiles = 2;
-  const maxFiles = 5;
+  const maxFiles = 2;
 
   // Change the regex to look for the date pattern anywhere in the filename
   const fileNameRegex = /\d{4}-\d{2}-\d{2}_[a-zA-Z0-9_-]+/;
@@ -54,7 +54,7 @@ const UploadArea = ({
     // Check number of files
     const totalFiles = files.length + newFiles.length;
     if (totalFiles < minFiles || totalFiles > maxFiles) {
-      setError(`Please upload between ${minFiles} and ${maxFiles} images.`);
+      setError(`Please upload exactly 2 images.`);
       return false;
     }
 
@@ -180,7 +180,7 @@ const UploadArea = ({
                 Drag & drop your satellite images
               </h3>
               <p className="text-sm text-shoreline-text dark:text-gray-400 mb-4 text-center">
-                Upload 2-5 Sentinel-2 satellite images of Sri Lankan
+                Upload exactly 2 Sentinel-2 satellite images of Sri Lankan
                 <br />
                 coastal regions for analysis
                 <br />
