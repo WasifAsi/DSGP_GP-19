@@ -592,45 +592,42 @@ def measure_changes():
     models_data = []
     
     try:
-        # For U-Net analysis
-        unet_img1 = preprocessed_images[0]['unet_processed']
-        unet_img2 = preprocessed_images[1]['unet_processed']
-
-        # Convert preprocessed tensors/arrays back to usable images if necessary
-        # This depends on how your preprocessing function works
-        # You might need to denormalize or reformat the preprocessed data
+         # For DeepLab analysis
+        deeplab_img1 = preprocessed_images[0]['deeplab_processed']
+        deeplab_img2 = preprocessed_images[1]['deeplab_processed']
         
-        stats_unet = run_shoreline_analysis(unet_paths[0], unet_paths[1], unet_img1, unet_img2, "U-net")
+        # Crop the image to 1024 x 1024 pixels
+        deeplab_img1 = crop_to_square(deeplab_img1)
+        deeplab_img2 = crop_to_square(deeplab_img2)
+        
+        print(f"\Cropped DeepLab images to 1024 x 1024 pixels for analysis\n")
+        
+        stats_deeplab = run_shoreline_analysis(
+            deeplab_paths[0], deeplab_paths[1], 
+            deeplab_img1, deeplab_img2, 
+            "DeepLab v3"
+        )
         models_data.append({
-            'model_name': "U-net",
-            'EPR': round(stats_unet["avg_epr"], 2),
-            'NSM': round(stats_unet["avg_nsm"], 2)
+            'model_name': "DeepLab v3",
+            'EPR': round(stats_deeplab["avg_epr"], 2),
+            'NSM': round(stats_deeplab["avg_nsm"], 2)
         })
         
-        try:
-            # For DeepLab analysis
-            deeplab_img1 = preprocessed_images[0]['deeplab_processed']
-            deeplab_img2 = preprocessed_images[1]['deeplab_processed']
-            
-            # Crop the image to 1024 x 1024 pixels
-            deeplab_img1 = crop_to_square(deeplab_img1)
-            deeplab_img2 = crop_to_square(deeplab_img2)
-            
-            print(f"\nResized DeepLab images to 540x540 pixels for analysis\n")
-            
-            stats_deeplab = run_shoreline_analysis(
-                deeplab_paths[0], deeplab_paths[1], 
-                deeplab_img1, deeplab_img2, 
-                "DeepLab v3"
-            )
-            models_data.append({
-                'model_name': "DeepLab v3",
-                'EPR': round(stats_deeplab["avg_epr"], 2),
-                'NSM': round(stats_deeplab["avg_nsm"], 2)
-            })
-        except Exception as e:
-            print(f"DeepLab analysis failed: {str(e)}")
-            models_data.append(get_fallback_data("DeepLab v3"))
+        # Comment out U-Net analysis
+        # try:
+        #     # For U-Net analysis
+        #     unet_img1 = preprocessed_images[0]['unet_processed']
+        #     unet_img2 = preprocessed_images[1]['unet_processed']
+
+        #     stats_unet = run_shoreline_analysis(unet_paths[0], unet_paths[1], unet_img1, unet_img2, "U-net")
+        #     models_data.append({
+        #         'model_name': "U-net",
+        #         'EPR': round(stats_unet["avg_epr"], 2),
+        #         'NSM': round(stats_unet["avg_nsm"], 2)
+        #     })
+        # except Exception as e:
+        #     print(f"U-net analysis failed: {str(e)}")
+        #     models_data.append(get_fallback_data("DeepLab v3"))
         
         # Comment out SegNet analysis
         # try:
@@ -742,6 +739,7 @@ def download_results(file_id):
     2. All segmented images from each model, preserving original image names
     3. The analysis results in JSON format
     4. A summary report in TXT format
+    5. The analysis_results directory containing visualizations and data
     """
     if file_id not in uploaded_files_cache:
         return jsonify({'error': 'Invalid file ID or session expired'}), 404
@@ -776,15 +774,6 @@ def download_results(file_id):
             result_paths = file_info['processed']
             file_names = file_info['file_names']
             
-            # Add U-Net results
-            if 'unet_paths' in result_paths:
-                print(f"Adding {len(result_paths['unet_paths'])} U-Net segmentation images")
-                for i, (path, name) in enumerate(zip(result_paths['unet_paths'], file_names)):
-                    if os.path.exists(path):
-                        arcname = f"results/unet/U-Net_{i+1}_{name}"
-                        zf.write(path, arcname=arcname)
-                        print(f"Added U-Net result: {arcname}")
-            
             # Add DeepLab results
             if 'deeplab_paths' in result_paths:
                 print(f"Adding {len(result_paths['deeplab_paths'])} DeepLab segmentation images")
@@ -793,6 +782,16 @@ def download_results(file_id):
                         arcname = f"results/deeplab/DeepLab_{i+1}_{name}"
                         zf.write(path, arcname=arcname)
                         print(f"Added DeepLab result: {arcname}")
+            
+            # Comment out U-NET results
+            # Add U-Net results
+            # if 'unet_paths' in result_paths:
+            #     print(f"Adding {len(result_paths['unet_paths'])} U-Net segmentation images")
+            #     for i, (path, name) in enumerate(zip(result_paths['unet_paths'], file_names)):
+            #         if os.path.exists(path):
+            #             arcname = f"results/unet/U-Net_{i+1}_{name}"
+            #             zf.write(path, arcname=arcname)
+            #             print(f"Added U-Net result: {arcname}")
             
             # Comment out SegNet results
             # Add SegNet results
@@ -820,7 +819,7 @@ def download_results(file_id):
             file_names = file_info['file_names']
             
             for model_name, model_paths in [
-                ('U-Net', result_paths.get('unet_paths', [])),
+                # ('U-Net', result_paths.get('unet_paths', [])),
                 ('DeepLab', result_paths.get('deeplab_paths', []))
                 # Comment out SegNet - not using this model anymore
                 # ('SegNet', result_paths.get('segnet_paths', []))
@@ -840,6 +839,22 @@ def download_results(file_id):
         summary = create_summary_report(file_info)
         zf.writestr('summary.txt', summary)
         print("Added summary.txt")
+        
+        # Add analysis_results directory
+        analysis_results_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'analysis_results')
+        if os.path.exists(analysis_results_dir):
+            print(f"Adding analysis_results directory")
+            for model_subdir in os.listdir(analysis_results_dir):
+                model_dir_path = os.path.join(analysis_results_dir, model_subdir)
+                if os.path.isdir(model_dir_path):
+                    # Add all files in the model subdirectory
+                    for filename in os.listdir(model_dir_path):
+                        file_path = os.path.join(model_dir_path, filename)
+                        if os.path.isfile(file_path):
+                            # Store with a path structure: analysis_results/model_name/filename
+                            arcname = f"analysis_results/{model_subdir}/{filename}"
+                            zf.write(file_path, arcname=arcname)
+                            print(f"Added analysis file: {arcname}")
     
     # Reset file pointer
     memory_file.seek(0)
